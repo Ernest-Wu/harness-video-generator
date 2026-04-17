@@ -788,18 +788,28 @@ def check_spec_coverage(review_content, spec_content):
 ### M4: PM Enrichment（P3 — 从 pm-skills 注入决策框架）
 
 **目标**: 将 pm-skills 的 PM 决策框架注入到对应 Skill，创建新 Skill
+**状态**: ✅ 已完成
 
-| 任务 | 修改文件 | 验收标准 |
-|------|---------|---------|
-| 4.1 product-spec-builder Key Concepts 注入 pm-skills 框架 | `SKILL.md` | 含 problem-statement + proto-persona + prioritization-advisor 框架摘要 |
-| 4.2 design-brief-builder Key Concepts 注入 pm-skills 框架 | `SKILL.md` | 含 positioning-statement + user-story-mapping 框架摘要 |
-| 4.3 dev-planner Key Concepts 注入 pm-skills 框架 | `SKILL.md` | 含 roadmap-planning + epic-hypothesis + lean-ux-canvas 框架摘要 |
-| 4.4 新建 pm/validation Skill | `SKILL.md` + `exit-check.py` | G5 验证 Skill |
-| 4.5 新建 pm/content-strategy Skill | `SKILL.md` + `exit-check.py` | CG0 内容策略 Skill |
-| 4.6 新建 pm/distribution-planner Skill | `SKILL.md` + `exit-check.py` | CG4 分发规划 Skill |
-| 4.7 新建 pm/content-validation Skill | `SKILL.md` + `exit-check.py` | CG5 内容验证 Skill |
-| 4.8 router.py 增加 pm/ 域路由 | `router.py` | 支持 `--domain pm` 过滤 |
-| 4.9 check-harness.py 增加 PM 域检查 | `check-harness.py` | 三域健康检查 |
+| 任务 | 修改文件 | 验收标准 | 状态 |
+|------|---------|---------|------|
+| 4.1 product-spec-builder Key Concepts 注入 pm-skills 框架 | `SKILL.md` | 含 problem-statement + proto-persona + prioritization-advisor 框架摘要 | ✅ |
+| 4.2 design-brief-builder Key Concepts 注入 pm-skills 框架 | `SKILL.md` | 含 positioning-statement + user-story-mapping 框架摘要 | ✅ |
+| 4.3 dev-planner Key Concepts 注入 pm-skills 框架 | `SKILL.md` | 含 roadmap-planning + epic-hypothesis + lean-ux-canvas 框架摘要 | ✅ |
+| 4.4 新建 pm/validation Skill | `SKILL.md` + `exit-check.py` | G5 验证 Skill | ✅ |
+| 4.5 新建 pm/content-strategy Skill | `SKILL.md` + `exit-check.py` | CG0 内容策略 Skill | ✅ |
+| 4.6 新建 pm/distribution-planner Skill | `SKILL.md` + `exit-check.py` | CG4 分发规划 Skill | ✅ |
+| 4.7 新建 pm/content-validation Skill | `SKILL.md` + `exit-check.py` | CG5 内容验证 Skill | ✅ |
+| 4.8 router.py 增加 pm/ 域路由 | `router.py` | 支持 `--domain pm` 过滤 | ✅ |
+| 4.9 check-harness.py 增加 PM 域检查 | `check-harness.py` | 三域健康检查 | ✅ |
+
+**M4 实际交付与设计的差异**：
+
+| 任务 | 设计 | 实际交付 | 差异说明 |
+|------|------|---------|---------|
+| 4.4 pm/validation | pol-probe + lean-ux-canvas（验证实验） | GO/PIVOT/KILL 决策框架 + Lean UX 验证实验 + pol-probe 结构化探测 | 增加了 GO/PIVOT/KILL 三级决策，更实用 |
+| 4.5 pm/content-strategy | discovery-interview-prep + positioning-workshop | Discovery Interview + Positioning Workshop 框架摘要 + 6 战略决策问题 | 合并为统一的 Content Strategy Compass |
+| 4.6 pm/distribution-planner | 无直接对应（全新） | 分发计划 5 维框架 + 平台元数据需求表 + UTM 追踪 | 完全新建 |
+| 4.7 pm/content-validation | business-health-diagnostic（指标评估） | Iterate/Refresh/Retire 三级决策 + Business Health Diagnostic 表格 + Steering Loop 连接 | 增加了内容专用决策框架 |
 
 **M4 完成后**: PM 决策层完整了——有 pm/ 域的 Skill 提供方法论，有 exit-check 提供验证，有 Gate Points 提供决策点。
 

@@ -10,6 +10,13 @@
 
 核心原则：**Pedagogic + Practical in Equal Measure**（源自 Product-Manager-Skills）+ **Hard Gates Determine Flow**（源自毒舌产品经理 4.0 的工程化升级）。
 
+Harness 现在支持**三个域**：
+- **dev/** — 软件开发（product-spec → design → plan → build → review → release）
+- **content/** — 内容生产（script → visual → TTS → video）
+- **pm/** — 产品管理决策（validation → content-strategy → distribution → content-validation）
+
+PM 域是**横切决策层**——不与 dev/ 和 content/ 并行执行，而是在关键决策点（G0-G5, CG0-CG5）提供方法论和验证。
+
 ---
 
 ## 五层架构与职责
@@ -132,7 +139,7 @@
 # Task Package
 
 ## Role
-{implementer | code-reviewer | feedback-observer | evolution-runner}
+{implementer | code-reviewer | feedback-observer | evolution-runner | pm-validator | content-strategist | distribution-planner | content-validator}
 
 ## Objective
 一句话描述本次 Task 的交付目标
@@ -148,17 +155,39 @@
 - Design-Brief / Visual-Design-Spec: `.claude/state/L3-design.md`
 - DEV-PLAN / Pipeline-Progress: `.claude/state/L4-plan.md`
 - Media-Asset-Manifest: `.claude/state/L5-media.md`
+- Content-Strategy: `.claude/state/L0-strategy.md`
+- Distribution-Plan: `.claude/state/L6-distribution.md`
+- Validation-Report: `.claude/state/L5-validation.md`
 
 ## Active Skill
 读取 `.claude/skills/{skill-name}/SKILL.md`，严格按其中 Application 执行
 
-> 注意：Skill 路径现在包含域前缀。例如 `content/script-writer` 的路径是 `.claude/skills/content/script-writer/SKILL.md`，`dev/product-spec-builder` 的路径是 `.claude/skills/dev/product-spec-builder/SKILL.md`。
+> 注意：Skill 路径包含域前缀。`content/script-writer` → `.claude/skills/content/script-writer/SKILL.md`，`dev/product-spec-builder` → `.claude/skills/dev/product-spec-builder/SKILL.md`，`pm/validation` → `.claude/skills/pm/validation/SKILL.md`。
 
 ## Constraints
 - 禁止修改与本次 Task 无关的文件
 - 每完成一个文件修改，必须能解释为什么
 - 完成后必须运行 `python3 .claude/skills/{domain}/{skill-name}/exit-check.py`
 - exit-check 通过前，禁止声称"完成"
+
+## PM 横切决策层（PM 核对点）
+
+PM 域的 Skill 不在执行链中顺序运行，而是在关键节点被触发：
+
+### Dev Track PM 触发点
+
+- **G0** (产品发现): 用户启动 `product-spec-builder` 后，Skill 中的 PM Discovery Gate 检查清单自动触发
+- **G1** (产品方向): `design-brief-builder` 输出后，Skill 中的 PM Direction Gate 检查清单自动触发
+- **G2** (产品范围): `dev-planner` 输出后，Skill 中的 PM Scope Gate 检查清单自动触发
+- **G3** (产品合规): `code-review` Stage 1 中 PM Compliance Gate 自动触发
+- **G4** (产品发布): `release-builder` 之前 PM Release Gate exit-check 自动触发
+- **G5** (产品验证): 产品上线 7/30 天后，手动触发 `pm/validation` Skill
+
+### Content Track PM 触发点
+
+- **CG0** (内容策略): 用户提到口播/视频主题时，先路由到 `pm/content-strategy`，再进入 `content/script-writer`
+- **CG4** (分发规划): `content/video-compositor` 完成后，触发 `pm/distribution-planner`
+- **CG5** (内容验证): 内容发布 7 天后，手动触发 `pm/content-validation`
 
 ## Output
 1. 执行结果说明
@@ -175,26 +204,28 @@
 ### 产品开发标准流程
 
 ```
-想法/需求 → product-spec-builder → [exit-check]
+想法/需求 → product-spec-builder → [exit-check] ← G0 PM Discovery Gate
     ↓ 通过
-design-brief-builder → [exit-check]
+design-brief-builder → [exit-check] ← G1 PM Direction Gate
     ↓ 通过
 design-maker (生成设计稿)
     ↓
-dev-planner → [exit-check]
+dev-planner → [exit-check] ← G2 PM Scope Gate
     ↓ 通过
 Loop per Phase:
     dev-builder (Task N) → [exit-check]
         ↓ 通过
-    code-review (Stage 1 + Stage 2) → [exit-check]
+    code-review (Stage 1 + Stage 2) → [exit-check] ← G3 PM Compliance Gate
         ↓ 通过
     pre-commit-check → auto-push
         ↓
-mark-review-needed (重置)
+    mark-review-needed (重置)
     ↓ Phase 完成
-release-builder → [exit-check]
+release-builder → [exit-check] ← G4 PM Release Gate
     ↓ 通过
 Done
+    ↓ 上线后 7/30 天
+pm/validation → [exit-check] ← G5 PM Validation Gate
 ```
 
 ### 异常流程
@@ -211,17 +242,23 @@ Done
 与软件开发流程并行，内容生产有自己的 Skill 链：
 
 ```
-口播稿/主题 → content/script-writer → [Hard Gate] → [Creative Gate: 平台+场景]
+口播稿/主题 → pm/content-strategy → [exit-check] ← CG0 PM Content Strategy Gate
+    ↓ 通过（L0-strategy.md）
+content/script-writer → [Hard Gate] → [Creative Gate: 平台+场景]
     ↓ 通过
 content/visual-designer:
   图片步骤 → [Creative Gate: 图片确认]
-  HTML步骤 → [Hard Gate] → [Creative Gate: 风格确认]
+  HTML步骤 → [Hard Gate] → [Creative Gate: 风格确认] ← CG1 PM Visual Direction Gate
     ↓ 通过
 content/tts-engine → [Hard Gate] → [Creative Gate: TTS风格 (**不可跳过**, CG2)]
     ↓ 通过
-content/video-compositor → [Hard Gate] → [Creative Gate: 最终视频确认]
+content/video-compositor → [Hard Gate] → [Creative Gate: 最终视频确认] ← CG3 PM Final Review Gate
     ↓ 通过
-Done → 视频产出物
+pm/distribution-planner → [exit-check] ← CG4 PM Distribution Gate
+    ↓ 通过（L6-distribution.md）
+发布
+    ↓ 发布后 7 天
+pm/content-validation → [exit-check] ← CG5 PM Content Validation Gate
 ```
 
 ### 双网关机制（Dual Gate）
@@ -244,11 +281,17 @@ Done → 视频产出物
 
 ---
 
-## 内容生产领域路由
+## 三域路由
 
-当用户输入匹配内容关键词（口播、视频、script、场景、配图、TTS、配音、渲染、合成等），路由到 content/ Skill。
+当用户输入匹配内容关键词（口播、视频、script、场景、配图、TTS、配音、渲染、合成等），路由到 `content/` Skill。
 
-当无法确定领域时，**询问用户**选择 dev 还是 content 路径。
+当用户输入匹配验证关键词（效果验证、上线后验证、KPI 复查、GO/PIVOT/KILL 决策等），路由到 `pm/` Skill。
+
+当用户输入匹配分发关键词（分发、发布计划、UTM、平台策略等），路由到 `pm/distribution-planner`。
+
+当无法确定领域时，**询问用户**选择 dev、content 还是 pm 路径。
+
+PM 域的 Skill 也可以通过 `router.py --domain pm` 显式路由。
 
 ---
 
