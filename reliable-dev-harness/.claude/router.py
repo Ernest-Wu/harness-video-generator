@@ -145,8 +145,10 @@ def main() -> int:
 
     matches = route(args.query, args.domain)
     if not matches:
-        print("No strong Skill match. Defaulting to: dev/product-spec-builder")
-        matches = ["dev/product-spec-builder"]
+        print("⚠ No strong Skill match found.")
+        print("  Consider specifying a domain with --domain dev or --domain content.")
+        print("  Or rephrase your query with more specific keywords.")
+        return 1
 
     print("Top matches:")
     for m in matches:

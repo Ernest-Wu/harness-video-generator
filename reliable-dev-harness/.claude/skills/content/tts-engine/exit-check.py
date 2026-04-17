@@ -5,7 +5,6 @@ Deterministic gate verifying TTS audio output and subtitle quality.
 """
 
 import json
-import os
 import sys
 from pathlib import Path
 

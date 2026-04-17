@@ -28,14 +28,15 @@ def check():
 
     html_content = SLIDES_PATH.read_text(encoding="utf-8")
 
-    if (
-        not html_content.strip().startswith("<")
-        and not "<html" in html_content.lower()[:200]
+    if not (
+        html_content.strip().startswith("<")
+        or "<html" in html_content.lower()[:500]
+        or "<!doctype" in html_content.lower()[:500]
     ):
         ISSUES.append(
             (
                 "invalid_html",
-                f"{SLIDES_PATH} does not appear to be valid HTML. Must start with <!DOCTYPE html> or <html>.",
+                f"{SLIDES_PATH} does not appear to be valid HTML. Must contain <!DOCTYPE html>, <html>, or start with an HTML tag.",
             )
         )
 

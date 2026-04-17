@@ -5,6 +5,7 @@ Deterministic gate verifying video output quality.
 """
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -31,9 +32,9 @@ def get_platform() -> str:
     if not SPEC_PATH.exists():
         return "16:9"  # Default
     content = SPEC_PATH.read_text(encoding="utf-8").lower()
-    if "9:16" in content or "9\\:16" in content:
+    if "9:16" in content or "9\\:16" in content or "9x16" in content:
         return "9:16"
-    elif "4:5" in content or "4\\:5" in content:
+    elif "4:5" in content or "4\\:5" in content or "4x5" in content:
         return "4:5"
     return "16:9"
 
@@ -64,6 +65,16 @@ def get_video_info(video_path: Path) -> dict | None:
 
 
 def check():
+    # 0. Check ffprobe availability
+    if not shutil.which("ffprobe"):
+        ISSUES.append(
+            (
+                "ffprobe_missing",
+                "ffprobe is not installed or not in PATH. Video validation requires ffmpeg/ffprobe. "
+                "Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux).",
+            )
+        )
+
     platform = get_platform()
     expected_width, expected_height = RESOLUTIONS.get(platform, (1920, 1080))
 
