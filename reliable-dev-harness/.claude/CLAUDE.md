@@ -22,7 +22,7 @@
 ├─────────────────────────────────────────┤
 │  执行层 (Sub-Agents)                    │
 │  每个 Task 全新实例，零上下文继承       │
-│  通过 .claude/state/ 的 L1-L4 文件通信 │
+│  通过 .claude/state/ 的 L1-L5 文件通信 │
 ├─────────────────────────────────────────┤
 │  引导层 (Skills)                        │
 │  每个 Skill = SKILL.md (方法论) +      │
@@ -90,17 +90,20 @@
 - 验收标准：{引用 Spec 中的对应条目}
 
 ## L2-L4 References (Read on Demand)
-- Product-Spec: `.claude/state/L2-spec.md`
-- Design-Brief: `.claude/state/L3-design.md`
-- DEV-PLAN: `.claude/state/L4-plan.md`
+- Product-Spec / Content-Spec: `.claude/state/L2-spec.md`
+- Design-Brief / Visual-Design-Spec: `.claude/state/L3-design.md`
+- DEV-PLAN / Pipeline-Progress: `.claude/state/L4-plan.md`
+- Media-Asset-Manifest: `.claude/state/L5-media.md`
 
 ## Active Skill
 读取 `.claude/skills/{skill-name}/SKILL.md`，严格按其中 Application 执行
 
+> 注意：Skill 路径现在包含域前缀。例如 `content/script-writer` 的路径是 `.claude/skills/content/script-writer/SKILL.md`，`dev/product-spec-builder` 的路径是 `.claude/skills/dev/product-spec-builder/SKILL.md`。
+
 ## Constraints
 - 禁止修改与本次 Task 无关的文件
 - 每完成一个文件修改，必须能解释为什么
-- 完成后必须运行 `python3 .claude/skills/{skill-name}/exit-check.py`
+- 完成后必须运行 `python3 .claude/skills/{domain}/{skill-name}/exit-check.py`
 - exit-check 通过前，禁止声称"完成"
 
 ## Output
@@ -146,6 +149,61 @@ Done
 - **Review Stage 1 失败**：退回 `dev-builder` 补实现
 - **Review Stage 2 失败**：触发 `bug-fixer` → 修复后重新 `code-review`
 - **用户修正反馈**：`feedback-observer` 记录 → `detect-feedback-signal` 扫描 → 存入 `.claude/feedback/`
+
+---
+
+## 内容生产标准流程
+
+与软件开发流程并行，内容生产有自己的 Skill 链：
+
+```
+口播稿/主题 → content/script-writer → [Hard Gate] → [Creative Gate: 平台+场景]
+    ↓ 通过
+content/visual-designer:
+  图片步骤 → [Creative Gate: 图片确认]
+  HTML步骤 → [Hard Gate] → [Creative Gate: 风格确认]
+    ↓ 通过
+content/tts-engine → [Hard Gate] → [Creative Gate: TTS风格 (可跳过)]
+    ↓ 通过
+content/video-compositor → [Hard Gate] → [Creative Gate: 最终视频确认]
+    ↓ 通过
+Done → 视频产出物
+```
+
+### 双网关机制（Dual Gate）
+
+内容生产 Skill 有**两类**网关：
+
+1. **Hard Gate**（确定性验证）— 由 `exit-check.py` 执行
+   - 文件存在、格式合法、数值阈值
+   - 二元通过/失败，没有例外
+
+2. **Creative Gate**（人类判断点）— 由 Orchestrator 在 Skill 过渡时执行
+   - 风格偏好、场景拆分、视觉满意度
+   - 默认不可跳过，但可标记为 "configurable skip"
+
+### Creative Gate 规则
+
+- Creative Gate 不可跳过（除非用户明确配置为可跳过）
+- 用户不满意时，回到**当前 Skill** 重新执行，而非修改上游 Skill 的输出
+- 每次通过 Creative Gate 的选择，记录到对应的 state 文件（L2-L5）
+
+---
+
+## 内容生产领域路由
+
+当用户输入匹配内容关键词（口播、视频、script、场景、配图、TTS、配音、渲染、合成等），路由到 content/ Skill。
+
+当无法确定领域时，**询问用户**选择 dev 还是 content 路径。
+
+---
+
+## Steering Loop 适配
+
+内容生产的反馈毕业阈值为 **≥5 次同类反馈**（vs 软件开发的 ≥3 次）：
+- 原因：主观偏好需要更多样本才能提炼规则
+- 自动提案：✅
+- 自动写入规则：❌（仍需人类确认）
 
 ---
 

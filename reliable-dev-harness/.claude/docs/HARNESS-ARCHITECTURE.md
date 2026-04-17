@@ -184,3 +184,57 @@ Reliable Dev Harness 是 Product-Manager-Skills 思想的**运行时工程化实
 - Reliable Dev Harness 确保**Skill 在真实产品开发中被严格执行**（hard gates ）
 
 两者是互补的：PM-Skills 提供知识和标准，Harness 提供执行和约束。
+
+---
+
+## 内容生产领域（Content Domain）
+
+### 设计原则
+
+内容生产领域的 Skill 遵循与软件开发相同的核心原则——Hard Gate、Context Firewall、Steering Loop——但有两处关键适配：
+
+1. **Creative Gate**：内容生产引入了"人类判断点"，用于验证 Hard Gate 无法判断的主观质量（风格、排版、语音自然度）。
+2. **Steering Loop 毕业阈值**：≥5 次同类反馈（vs 软件开发的 ≥3 次），因为主观偏好需要更多样本才能提炼规则。
+
+### 双网关模型
+
+```
+Skill 完成 → [Hard Gate: exit-check.py] → 通过 → [Creative Gate: 人类确认] → 通过 → 下一个 Skill
+                ↓ 失败                       ↓ 不满意
+              退回当前 Skill 修复          退回当前 Skill 重做（不是修改上游）
+```
+
+Hard Gate 检查机器可判定的事实（文件存在、格式合法、数值阈值）。
+Creative Gate 检查需要审美或编辑判断的质量（风格偏好、视觉满意度）。
+
+### Skill 分解
+
+self-media-video 的单体 G0-G4 流程被拆分为 4 个专注于单一职责的 Skill：
+
+| Skill | 覆盖原流程 | Hard Gate | Creative Gate |
+|-------|----------|-----------|---------------|
+| script-writer | G0+G1 | scenes.json 结构验证 | 平台选择 + 场景确认 |
+| visual-designer | G2+G3 | HTML + data-beat-at + 图片存在 | 3 Style Previews + 图片确认 |
+| tts-engine | G4a | 音频文件 + 字幕格式 + 时长偏差 | TTS 风格选择 (可跳过) |
+| video-compositor | G4b | 分辨率 + fps + 时长匹配 | 最终视频确认 |
+
+### 状态管理扩展
+
+内容生产引入 L5-media.md 用于跟踪媒体资产：
+
+| 层级 | 文件 | 内容含义 |
+|------|------|---------|
+| L1 | L1-summary.md | 项目概览 (共享) |
+| L2 | L2-spec.md | 内容规格 (content) / 产品规格 (dev) |
+| L3 | L3-design.md | 视觉设计 (content) / 设计规范 (dev) |
+| L4 | L4-plan.md | 流水线进度 (content) / 开发计划 (dev) |
+| L5 | L5-media.md | 媒体资产清单 (content only) |
+
+### frontend-slides 集成
+
+visual-designer 是编排器，委托 HTML 幻灯片生成给外部 `frontend-slides` 技能：
+
+- **visual-designer** 处理：场景→幻灯片数据转换、平台覆盖 CSS、beat 属性注入、图片管理
+- **frontend-slides** 处理：Mood Selection、3 Style Previews、HTML 生成、视觉设计质量
+
+frontend-slides 不需要知道"视频"——它产出的幻灯片被 visual-designer 后处理为视频可用格式。
