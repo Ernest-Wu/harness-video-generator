@@ -1,6 +1,6 @@
 # Reliable Dev Harness
 
-A product development harness that combines **Product-Manager-Skills** pedagogy with **毒舌产品经理 4.0** engineering discipline. Now supports **dual-track** workflows: software development AND content production.
+A dual-track product development harness combining pedagogic-first skill design with hard-gate engineering discipline. Supports both software development and content production workflows.
 
 ## Core Idea
 
@@ -129,5 +129,4 @@ Content track uses **Dual Gates**: deterministic exit-check.py (Hard Gate) PLUS 
 ## Credits
 
 - **Product-Manager-Skills** (deanpeters) - Pedagogic-first skill design and standardization
-- **毒舌产品经理 4.0** - Runtime harness architecture, Context Firewall, and Steering Loop
 - **self-media-video** - Content pipeline logic (migrated into content/ skills)
