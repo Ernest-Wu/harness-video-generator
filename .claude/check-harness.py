@@ -29,11 +29,13 @@ CONTENT_SKILLS = [
 ]
 
 STATE_FILES = [
+    "L0-strategy.md",
     "L1-summary.md",
     "L2-spec.md",
     "L3-design.md",
     "L4-plan.md",
     "L5-media.md",
+    "L6-distribution.md",
 ]
 
 DOC_FILES = [

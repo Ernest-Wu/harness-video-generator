@@ -16,7 +16,7 @@
 总音频时长应在预估总时长的 ±30% 以内。超出此范围说明场景文本与预估时长严重不匹配。
 
 ### 反模式（Anti-Patterns）
-- ❌ 不要跳过 TTS 风格选择的 Creative Gate——即使使用默认预设也需要确认
+- ❌ **绝对不要跳过 TTS 风格选择的 Creative Gate**——这是 CG2 PM Voice Direction Gate，不可跳过（non-skippable），即使使用默认预设也必须记录选择
 - ❌ 不要手动估算时长——必须用实际音频时长
 - ❌ 不要在没有 scenes.json 的情况下开始工作
 
@@ -28,12 +28,12 @@
 1. `scenes.json` — 场景数据
 2. `.claude/state/L3-design.md` — 包含视觉设计规格
 
-### 步骤 1：Creative Gate G4a-1 — TTS 风格选择
+### 步骤 1：Creative Gate G4a-1 (CG2) — TTS 风格选择（不可跳过）
 
-与用户确认 TTS 风格：
+与用户确认 TTS 风格（**PM Voice Direction Gate — CG2，不可跳过**）：
 1. 展示预设表（专业科普、轻松闲聊等）
 2. 如果用户已有偏好，直接确认
-3. 如果 Creative Gate 被标记为 "configurable skip"，可使用默认预设并跳过确认
+3. 选择结果必须记录到 `state/L3-design.md` 的 TTS 部分
 
 **TTS 预设表：**
 
@@ -127,7 +127,7 @@ audio/
 1. **忽略音频时长偏差**：实际时长与预估相差超过 30% 是严重问题，需要回溯。
 2. **缺少音频文件**：每个场景必须有对应的 .mp3 文件，缺失任何一个都会导致 video-compositor 失败。
 3. **字幕时间不对齐**：subtitles.json 的时间必须与实际音频播放时间严格对齐。
-4. **跳过 Creative Gate**：即使用户信任默认预设，也需要至少记录选择了哪个预设。
+4. **跳过 Creative Gate 是违反协议的**：TTS 风格选择是 CG2 PM Voice Direction Gate，不可跳过。即使默认预设也需要显式确认并记录到 state 文件。
 
 ## Exit-Check Criteria
 

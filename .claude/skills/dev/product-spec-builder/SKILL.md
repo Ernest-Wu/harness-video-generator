@@ -35,10 +35,19 @@ A good Product-Spec is **machine-readable first, human-readable second**. It mus
 5. **Scope Boundaries** — Explicit In-Scope and Out-of-Scope
 6. **Key Decisions** — Product-level tradeoffs already made
 
-### Anti-Patterns (What This Is NOT)
-- **Not a marketing deck:** No buzzwords, no "revolutionize the industry"
-- **Not an engineering spec:** Don't specify tech stack or database schema here
-- **Not endless:** 1-2 pages max. If it's longer, the product is too big.
+### PM Discovery Gate (G0)
+This skill produces the input for the **PM Discovery Gate**. Before proceeding to design, verify:
+- [ ] Problem statement is quantified (not just "users are frustrated")
+- [ ] Target user is specific (name a persona, not "everyone")
+- [ ] Success metrics are linked to business goals
+- [ ] Features are prioritized (P0/P1/P2) with MVP boundary defined
+- [ ] At least one assumption is explicitly listed
+
+### Entry Modes
+Offer three modes:
+1. **Guided** — I ask you 8-12 questions one at a time (recommended for new projects)
+2. **Context Dump** — You paste everything you know; I fill gaps only
+3. **Best Guess** — I infer from minimal input and label all assumptions
 
 ## Application
 
@@ -47,8 +56,6 @@ Offer three modes:
 1. **Guided** — I ask you 8-12 questions one at a time
 2. **Context Dump** — You paste everything you know; I fill gaps only
 3. **Best Guess** — I infer from minimal input and label all assumptions
-
-### Question Sequence (Adaptive, max 10 questions)
 
 **Q1: Target User**
 "Who is the primary user? Describe their situation and what they're trying to accomplish."
@@ -111,6 +118,27 @@ Write the final spec to `.claude/state/L2-spec.md` using this structure:
 ## Key Decisions
 - {Tradeoff decision 1}
 - ...
+
+## Business Goal
+{What business objective does this product/feature serve? Link to company strategy if applicable.}
+
+## Assumptions
+- {Assumption 1}: {validation status — unvalidated / validated / partially validated}
+- {Assumption 2}: ...
+
+## Feature Priority
+### P0 (MVP — Must Have)
+- {feature} — {user outcome}
+
+### P1 (Should Have)
+- {feature} — {user outcome}
+
+### P2 (Nice to Have)
+- {feature} — {user outcome}
+
+## MVP Boundary
+**In MVP (Phase 0):** {list MVP-must features}
+**Post MVP (Phase 1+):** {list features for later phases}
 ```
 
 ### After Output

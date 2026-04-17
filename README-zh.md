@@ -1,6 +1,6 @@
 # Reliable Dev Harness
 
-双轨道产品开发框架，融合**教学优先的 Skill 设计**与**硬门工程纪律**。同时支持软件开发和内容生产（口播视频）。
+双轨道产品开发框架，融合**规格驱动的 Skill 设计**与**硬门工程纪律**。同时支持软件开发和内容生产（口播视频）。
 
 [English](README.md)
 
@@ -91,43 +91,51 @@ python3 .claude/check-harness.py
 
 ## 目录结构
 
+📊 [查看交互式架构图](architecture.html)
+
 ```
 .claude/
-├── CLAUDE.md                          # 调度协议（双域路由）
+├── CLAUDE.md                          # 调度协议（双域路由 + PM 决策门）
 ├── router.py                          # Skill 匹配器（--domain 过滤）
 ├── check-harness.py                   # 双轨健康检查
 │
 ├── skills/
 │   ├── dev/                           # 软件开发域
-│   │   ├── product-spec-builder/      #   需求 → L2-spec
-│   │   ├── design-brief-builder/      #   设计简报 → L3-design
+│   │   ├── product-spec-builder/      #   需求 → L2-spec [G0 PM 发现门]
+│   │   ├── design-brief-builder/      #   设计简报 → L3-design [G1 PM 方向门]
 │   │   ├── design-maker/              #   设计稿生成
-│   │   ├── dev-planner/               #   开发规划 → L4-plan
+│   │   ├── dev-planner/               #   开发规划 → L4-plan [G2 PM 范围门]
 │   │   ├── dev-builder/               #   代码实现
 │   │   ├── bug-fixer/                 #   缺陷修复
-│   │   ├── code-review/               #   两阶段代码审查
-│   │   └── release-builder/           #   发布打包
+│   │   ├── code-review/               #   两阶段代码审查 [G3 PM 合规门 + Spec缺口协议]
+│   │   └── release-builder/           #   发布打包 [G4 PM 发布门]
 │   │
 │   └── content/                        # 内容生产域
-│       ├── script-writer/             #   口播文稿 → scenes.json + L2-spec
-│       ├── visual-designer/           #   场景 → HTML 幻灯片（通过 frontend-slides）
-│       ├── tts-engine/                #   语音合成 → audio/ + subtitles.json
-│       └── video-compositor/          #   视频合成 → final-video.mp4
+│       ├── script-writer/             #   口播文稿 → scenes.json + L2-spec [CG0]
+│       ├── visual-designer/           #   场景 → HTML 幻灯片 [CG1 视觉方向门]
+│       ├── tts-engine/                #   语音合成 → audio/ + subtitles.json [CG2 声音方向门 - 不可跳过]
+│       └── video-compositor/          #   视频合成 → final-video.mp4 [CG3 最终审核门]
 │
 ├── hooks/                              # 传感层
 │   ├── pre-commit-check.sh            #   开发域
 │   ├── stop-gate.sh                   #   开发域
 │   └── content-validator.sh           #   内容域
 │
-├── state/                              # 层级上下文（L1-L5）
+├── state/                              # 层级上下文（L0-L6）
+│   ├── L0-strategy.md                #   内容策略（业务目标、受众、KPI）
 │   ├── L1-summary.md                  #   项目概览（共享）
 │   ├── L2-spec.md                     #   开发: 需求规格 / 内容: 内容规格
 │   ├── L3-design.md                   #   开发: 设计简报 / 内容: 视觉规格
 │   ├── L4-plan.md                     #   开发: 开发计划 / 内容: 流水线进度
-│   └── L5-media.md                   #   内容: 媒体资产清单
+│   ├── L5-media.md                   #   内容: 媒体资产清单
+│   └── L6-distribution.md             #   分发计划（平台、时间、UTM、合规）
 │
 ├── feedback/                           # 方向盘输入
 ├── agents/                             # Sub-Agent 角色定义
+│   ├── IMPLEMENTER.md
+│   ├── REVIEWER.md
+│   ├── FEEDBACK-OBSERVER.md           #   PM/内容/开发 反馈类型（三域毕业阈值）
+│   └── EVOLUTION-RUNNER.md
 │
 └── docs/
     ├── HARNESS-ARCHITECTURE.md         #   架构文档（双轨）
@@ -143,6 +151,7 @@ python3 .claude/check-harness.py
 想法 → product-spec-builder → design-brief-builder → design-maker
   → dev-planner → dev-builder → code-review → release-builder
   [Hard Gate: exit-check.py 每步验证]
+  [PM 决策门: G0→G1→G2→G3+G3b→G4→G5 每步需要人类决策]
 ```
 
 ### 内容轨道（口播视频）
@@ -150,6 +159,7 @@ python3 .claude/check-harness.py
 ```
 口播稿 → script-writer → visual-designer → tts-engine → video-compositor
   [Hard Gate: exit-check.py] + [Creative Gate: 人类确认]
+  [PM 决策门: CG0→CG1→CG2→CG3→CG4→CG5 每步需要人类决策]
 ```
 
 内容轨道使用**双网关**：确定性脚本验证（Hard Gate）+ 人类判断点（Creative Gate）。
@@ -185,5 +195,5 @@ python3 .claude/check-harness.py
 
 ## 致谢
 
-- **Product-Manager-Skills** (deanpeters) - 教学优先的 Skill 设计和标准化
+- **Product-Manager-Skills** (deanpeters) - 规格驱动的 Skill 设计和标准化
 - **self-media-video** - 内容流水线逻辑（已迁移到 content/ skills）

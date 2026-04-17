@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reliable Dev Harness — Architecture Overview</title>
+<style>
+  :root {
+    --blue: #4299e1;
+    --orange: #ed8936;
+    --purple: #9f7aea;
+    --green: #48bb78;
+    --red: #e53e3e;
+    --yellow: #ecc94b;
+    --dark: #1a202c;
+    --gray: #718096;
+    --light-bg: #f7fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+    --blue-light: #ebf8ff;
+    --orange-light: #fffaf0;
+    --purple-light: #faf5ff;
+    --green-light: #f0fff4;
+    --red-light: #fff5f5;
+    --yellow-light: #fffff0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--light-bg);
+    color: var(--dark);
+    line-height: 1.6;
+  }
+
+  /* Sticky Nav */
+  .sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    padding: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  }
+  .sticky-nav .nav-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--blue) var(--dark);
+  }
+  .sticky-nav .nav-title {
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 16px;
+    white-space: nowrap;
+    border-right: 1px solid rgba(255,255,255,0.15);
+  }
+  .sticky-nav a {
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 12px;
+    padding: 10px 12px;
+    white-space: nowrap;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+  .sticky-nav a:hover, .sticky-nav a:focus {
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+    border-bottom-color: var(--blue);
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #4299e1 200%);
+    color: #fff;
+    padding: 60px 20px 40px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .hero .subtitle {
+    font-size: clamp(14px, 2.5vw, 20px);
+    opacity: 0.85;
+    max-width: 800px;
+    margin: 0 auto;
+    font-weight: 300;
+  }
+  .hero .tagline {
+    margin-top: 20px;
+    font-size: 15px;
+    color: var(--yellow);
+    font-style: italic;
+  }
+
+  /* Container */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* Section */
+  .section {
+    margin: 40px 0;
+    scroll-margin-top: 56px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 16px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 700;
+    color: var(--dark);
+  }
+  .section-header .section-sub {
+    font-size: 14px;
+    color: var(--gray);
+    margin-left: auto;
+    font-weight: 400;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  .card-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .card-grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .card-grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+  /* Layer blocks */
+  .layer-block {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .layer-block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+  .layer-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .layer-content h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .layer-content p {
+    font-size: 13px;
+    color: var(--gray);
+    line-height: 1.5;
+  }
+
+  /* Pipeline */
+  .pipeline-container {
+    overflow-x: auto;
+    padding: 10px 0;
+  }
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    min-width: max-content;
+  }
+  .pipeline-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 110px;
+    position: relative;
+  }
+  .pipeline-node .node-box {
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 100px;
+    max-width: 140px;
+    transition: transform 0.2s;
+    position: relative;
+    line-height: 1.3;
+  }
+  .pipeline-node .node-box:hover {
+    transform: scale(1.05);
+  }
+  .pipeline-node .gate-label {
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .pipeline-arrow {
+    font-size: 20px;
+    color: var(--gray);
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  /* State hierarchy */
+  .state-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-bottom: 6px;
+  }
+  .state-label {
+    width: 120px;
+    border-radius: 8px 0 0 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .state-desc {
+    flex: 1;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .state-desc .dev { color: var(--blue); font-weight: 600; }
+  .state-desc .content { color: var(--orange); font-weight: 600; }
+  .state-desc .shared { color: var(--green); font-weight: 600; }
+
+  /* Table */
+  .arch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .arch-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--border);
+  }
+  .arch-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .arch-table tr:hover td {
+    background: var(--blue-light);
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-high { background: var(--red-light); color: var(--red); }
+  .badge-warning { background: var(--yellow-light); color: #975a16; }
+  .badge-info { background: var(--blue-light); color: var(--blue); }
+  .badge-green { background: var(--green-light); color: #276749; }
+  .badge-purple { background: var(--purple-light); color: #6b46c1; }
+
+  /* Dual gate */
+  .dual-gate {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 700px) {
+    .dual-gate { grid-template-columns: 1fr; }
+  }
+  .gate-card {
+    border-radius: 12px;
+    padding: 24px;
+    border: 2px solid;
+  }
+  .gate-card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  .gate-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .gate-card li {
+    padding: 6px 0;
+    font-size: 14px;
+    padding-left: 20px;
+    position: relative;
+  }
+  .gate-card li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* Steering loop */
+  .loop-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .loop-step .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* Firewall diagram */
+  .firewall-diagram {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+  }
+  .fw-box {
+    border-radius: 10px;
+    padding: 14px 24px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 280px;
+    position: relative;
+  }
+  .fw-arrow {
+    font-size: 24px;
+    color: var(--gray);
+  }
+
+  /* SVG responsive */
+  .svg-container {
+    overflow-x: auto;
+    padding: 10px 0;
+  }
+  .svg-container svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container { padding: 12px; }
+    .section { margin: 24px 0; }
+    .card { padding: 16px; }
+    .state-row { flex-direction: column; }
+    .state-label { width: 100%; border-radius: 8px 8px 0 0; }
+    .state-desc { border-left: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+    .pipeline { flex-direction: column; align-items: flex-start; }
+    .pipeline-arrow { transform: rotate(90deg); margin: 4px 0; }
+  }
+
+  /* Print */
+  @media print {
+    .sticky-nav { position: static; }
+    .section { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sticky Navigation -->
+<nav class="sticky-nav">
+  <div class="nav-inner">
+    <div class="nav-title">🏗️ Harness</div>
+    <a href="#s1">五层架构</a>
+    <a href="#s2">Dev Track</a>
+    <a href="#s3">Content Track</a>
+    <a href="#s4">State Files</a>
+    <a href="#s5">PM Gates</a>
+    <a href="#s6">Spec Gap</a>
+    <a href="#s7">Dual Gate</a>
+    <a href="#s8">Steering Loop</a>
+    <a href="#s9">Context Firewall</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>Reliable Dev Harness</h1>
+  <p class="subtitle">双轨道产品开发框架 — 规格驱动的 Skill 设计 + 硬门工程纪律</p>
+  <p class="tagline">"Vibe Coding fails not because models are dumb, but because there is no system around the model."</p>
+</div>
+
+<div class="container">
+
+<!-- Section 1: Five-Layer Architecture -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--blue)">1</div>
+    <h2>五层架构 Five-Layer Architecture</h2>
+    <span class="section-sub">调度 → 决策 → 执行 → 引导 → 检查 + 进化</span>
+  </div>
+
+  <div class="card">
+    <div class="svg-container">
+      <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+        <defs>
+          <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#718096"/>
+          </marker>
+          <filter id="shadow1" x="-2%" y="-2%" width="104%" height="108%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+          </filter>
+        </defs>
+
+        <!-- PM Decision Layer - Cross-cutting bar -->
+        <rect x="30" y="200" width="840" height="80" rx="12" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="2" stroke-dasharray="8,4"/>
+        <text x="450" y="225" text-anchor="middle" font-size="14" font-weight="700" fill="#6b46c1">PM Decision Layer 横切决策层</text>
+        <text x="450" y="248" text-anchor="middle" font-size="11" fill="#9f7aea">G0–G5 (Dev) + CG0–CG5 (Content) — Human confirmation required at each gate</text>
+        <text x="450" y="268" text-anchor="middle" font-size="10" fill="#9f7aea" font-style="italic">Crosses both tracks: blocks progress until PM approves</text>
+
+        <!-- Layer 1: Orchestrator -->
+        <rect x="30" y="20" width="840" height="70" rx="10" fill="#4299e1" fill-opacity="0.12" stroke="#4299e1" stroke-width="2" filter="url(#shadow1)"/>
+        <text x="60" y="50" font-size="15" font-weight="700" fill="#2b6cb0">调度层 Orchestrator</text>
+        <text x="60" y="70" font-size="11" fill="#4299e1">CLAUDE.md — reads intent, routes to Skill, delegates Sub-Agent</text>
+        <rect x="680" y="35" width="170" height="36" rx="6" fill="#4299e1"/>
+        <text x="765" y="58" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">router.py --domain</text>
+
+        <!-- Arrow: Orchestrator → PM -->
+        <line x1="450" y1="90" x2="450" y2="195" stroke="#718096" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowDown)"/>
+
+        <!-- Layer 2: Sub-Agents -->
+        <rect x="30" y="310" width="840" height="70" rx="10" fill="#ed8936" fill-opacity="0.12" stroke="#ed8936" stroke-width="2" filter="url(#shadow1)"/>
+        <text x="60" y="340" font-size="15" font-weight="700" fill="#c05621">执行层 Sub-Agents</text>
+        <text x="60" y="360" font-size="11" fill="#ed8936">Fresh instance per task · Zero inherited context · State via .claude/state/</text>
+        <rect x="580" y="325" width="130" height="30" rx="6" fill="#ed8936"/>
+        <text x="645" y="345" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Dev Track</text>
+        <rect x="720" y="325" width="130" height="30" rx="6" fill="#ed8936"/>
+        <text x="785" y="345" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Content Track</text>
+
+        <!-- Arrow: PM → Sub-Agents -->
+        <line x1="450" y1="280" x2="450" y2="305" stroke="#718096" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowDown)"/>
+
+        <!-- Layer 3: Skills -->
+        <rect x="30" y="400" width="840" height="70" rx="10" fill="#48bb78" fill-opacity="0.12" stroke="#48bb78" stroke-width="2" filter="url(#shadow1)"/>
+        <text x="60" y="430" font-size="15" font-weight="700" fill="#276749">引导层 Skills</text>
+        <text x="60" y="450" font-size="11" fill="#48bb78">SKILL.md (methodology) + exit-check.py (deterministic gate)</text>
+        <rect x="580" y="415" width="130" height="30" rx="6" fill="#48bb78"/>
+        <text x="645" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">SKILL.md</text>
+        <rect x="720" y="415" width="130" height="30" rx="6" fill="#48bb78"/>
+        <text x="785" y="435" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">exit-check.py</text>
+
+        <!-- Arrow: Sub-Agents → Skills -->
+        <line x1="450" y1="380" x2="450" y2="395" stroke="#718096" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowDown)"/>
+
+        <!-- Layer 4: Hooks + exit-check (bottom bar) -->
+        <rect x="30" y="485" width="400" height="30" rx="6" fill="#e53e3e" fill-opacity="0.12" stroke="#e53e3e" stroke-width="1.5"/>
+        <text x="230" y="505" text-anchor="middle" font-size="11" font-weight="600" fill="#e53e3e">检查层 Hooks — zero LLM judgment, pure script gatekeeping</text>
+
+        <rect x="470" y="485" width="400" height="30" rx="6" fill="#ecc94b" fill-opacity="0.15" stroke="#ecc94b" stroke-width="1.5"/>
+        <text x="670" y="505" text-anchor="middle" font-size="11" font-weight="600" fill="#975a16">进化层 Steering Loop — auto-record → auto-propose → human-confirm → merge</text>
+
+        <!-- Arrow: Skills → Checks -->
+        <line x1="450" y1="470" x2="450" y2="480" stroke="#718096" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowDown)"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card-grid card-grid-2">
+    <div class="layer-block" style="background:var(--blue-light); border-left:4px solid var(--blue)">
+      <div class="layer-icon" style="background:var(--blue); color:#fff">🧭</div>
+      <div class="layer-content">
+        <h3 style="color:var(--blue)">调度层 Orchestrator</h3>
+        <p>Reads CLAUDE.md, interprets user intent, routes to the correct Skill, and delegates Sub-Agent tasks. Single entry point for all requests.</p>
+      </div>
+    </div>
+    <div class="layer-block" style="background:var(--purple-light); border-left:4px solid var(--purple)">
+      <div class="layer-icon" style="background:var(--purple); color:#fff">🟣</div>
+      <div class="layer-content">
+        <h3 style="color:var(--purple)">PM Decision Layer 横切决策层</h3>
+        <p>Cross-cutting gate layer spanning both Dev and Content tracks. G0–G5 (Dev) + CG0–CG5 (Content). Requires human confirmation at each gate point.</p>
+      </div>
+    </div>
+    <div class="layer-block" style="background:var(--orange-light); border-left:4px solid var(--orange)">
+      <div class="layer-icon" style="background:var(--orange); color:#fff">⚡</div>
+      <div class="layer-content">
+        <h3 style="color:var(--orange)">执行层 Sub-Agents</h3>
+        <p>Fresh instance per task. Zero inherited context. All state passes through <code>.claude/state/</code> files. Context firewall enforced.</p>
+      </div>
+    </div>
+    <div class="layer-block" style="background:var(--green-light); border-left:4px solid var(--green)">
+      <div class="layer-icon" style="background:var(--green); color:#fff">📋</div>
+      <div class="layer-content">
+        <h3 style="color:var(--green)">引导层 Skills</h3>
+        <p>Each skill = SKILL.md (methodology + anti-patterns) + exit-check.py (deterministic binary gate). No LLM self-assessment.</p>
+      </div>
+    </div>
+    <div class="layer-block" style="background:var(--red-light); border-left:4px solid var(--red)">
+      <div class="layer-icon" style="background:var(--red); color:#fff">🛑</div>
+      <div class="layer-content">
+        <h3 style="color:var(--red)">检查层 Hooks + exit-check</h3>
+        <p>Zero LLM judgment. Pure script gatekeeping. Exit code ≠ 0 = BLOCK. No exceptions.</p>
+      </div>
+    </div>
+    <div class="layer-block" style="background:var(--yellow-light); border-left:4px solid var(--yellow)">
+      <div class="layer-icon" style="background:var(--yellow); color:#975a16">🔄</div>
+      <div class="layer-content">
+        <h3 style="color:#975a16">进化层 Steering Loop</h3>
+        <p>auto-record → auto-propose → <strong>human-confirm</strong> → merge. Cannot auto-write to SKILL.md or exit-check.py.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Dev Track Pipeline -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--blue)">2</div>
+    <h2>Dev Track Pipeline 开发轨道</h2>
+    <span class="section-sub">idea → spec → design → plan → build → review → release</span>
+  </div>
+
+  <div class="card">
+    <div class="svg-container">
+      <svg viewBox="0 0 1100 280" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+        <defs>
+          <marker id="arrowR" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#718096"/>
+          </marker>
+          <filter id="ds" x="-2%" y="-5%" width="104%" height="115%">
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/>
+          </filter>
+        </defs>
+
+        <!-- Idea node -->
+        <rect x="10" y="40" width="80" height="44" rx="22" fill="#4299e1" filter="url(#ds)"/>
+        <text x="50" y="67" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">idea</text>
+
+        <!-- Skill nodes -->
+        <!-- product-spec-builder -->
+        <line x1="90" y1="62" x2="120" y2="62" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+        <rect x="125" y="30" width="140" height="64" rx="10" fill="#fff" stroke="#4299e1" stroke-width="2" filter="url(#ds)"/>
+        <text x="195" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#2b6cb0">product-spec</text>
+        <text x="195" y="70" text-anchor="middle" font-size="11" font-weight="700" fill="#2b6cb0">-builder</text>
+        <text x="195" y="85" text-anchor="middle" font-size="9" fill="#718096">→ L2-spec</text>
+
+        <!-- G0 gate -->
+        <rect x="145" y="105" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="195" y="120" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">G0 PM Gate</text>
+
+        <!-- design-brief-builder -->
+        <line x1="265" y1="62" x2="295" y2="62" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+        <rect x="300" y="30" width="140" height="64" rx="10" fill="#fff" stroke="#4299e1" stroke-width="2" filter="url(#ds)"/>
+        <text x="370" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#2b6cb0">design-brief</text>
+        <text x="370" y="70" text-anchor="middle" font-size="11" font-weight="700" fill="#2b6cb0">-builder</text>
+        <text x="370" y="85" text-anchor="middle" font-size="9" fill="#718096">→ L3-design</text>
+
+        <!-- G1 gate -->
+        <rect x="320" y="105" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="370" y="120" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">G1 PM Gate</text>
+
+        <!-- design-maker -->
+        <line x1="440" y1="62" x2="470" y2="62" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+        <rect x="475" y="30" width="120" height="64" rx="10" fill="#fff" stroke="#48bb78" stroke-width="2" filter="url(#ds)"/>
+        <text x="535" y="58" text-anchor="middle" font-size="11" font-weight="700" fill="#276749">design-maker</text>
+        <text x="535" y="85" text-anchor="middle" font-size="9" fill="#718096">→ mockup</text>
+
+        <!-- dev-planner -->
+        <line x1="595" y1="62" x2="625" y2="62" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+        <rect x="630" y="30" width="120" height="64" rx="10" fill="#fff" stroke="#4299e1" stroke-width="2" filter="url(#ds)"/>
+        <text x="690" y="58" text-anchor="middle" font-size="11" font-weight="700" fill="#2b6cb0">dev-planner</text>
+        <text x="690" y="85" text-anchor="middle" font-size="9" fill="#718096">→ L4-plan</text>
+
+        <!-- G2 gate -->
+        <rect x="650" y="105" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="700" y="120" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">G2 PM Gate</text>
+
+        <!-- dev-builder -->
+        <line x1="750" y1="62" x2="780" y2="62" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+        <rect x="785" y="30" width="120" height="64" rx="10" fill="#fff" stroke="#ed8936" stroke-width="2" filter="url(#ds)"/>
+        <text x="845" y="58" text-anchor="middle" font-size="11" font-weight="700" fill="#c05621">dev-builder</text>
+        <text x="845" y="85" text-anchor="middle" font-size="9" fill="#718096">→ code</text>
+
+        <!-- code-review -->
+        <line x1="905" y1="62" x2="935" y2="62" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+
+        <!-- Second row for remaining skills -->
+        <rect x="940" y="30" width="120" height="64" rx="10" fill="#fff" stroke="#e53e3e" stroke-width="2" filter="url(#ds)"/>
+        <text x="1000" y="58" text-anchor="middle" font-size="11" font-weight="700" fill="#e53e3e">code-review</text>
+        <text x="1000" y="85" text-anchor="middle" font-size="9" fill="#718096">two-stage</text>
+
+        <!-- G3 gate -->
+        <rect x="950" y="105" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="1000" y="120" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">G3/G3b Gate</text>
+
+        <!-- Bottom row: release-builder and Done -->
+        <line x1="1000" y1="94" x2="1000" y2="155" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR)"/>
+
+        <rect x="920" y="160" width="140" height="64" rx="10" fill="#fff" stroke="#48bb78" stroke-width="2" filter="url(#ds)"/>
+        <text x="990" y="188" text-anchor="middle" font-size="11" font-weight="700" fill="#276749">release-builder</text>
+        <text x="990" y="210" text-anchor="middle" font-size="9" fill="#718096">→ release</text>
+
+        <!-- G4 gate -->
+        <rect x="930" y="235" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="980" y="250" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">G4 PM Gate</text>
+
+        <!-- Done -->
+        <line x1="990" y1="224" x2="990" y2="232" stroke="#718096" stroke-width="1.5"/>
+
+        <rect x="810" y="160" width="90" height="44" rx="22" fill="#48bb78" filter="url(#ds)"/>
+        <text x="855" y="187" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Done</text>
+
+        <!-- G5 retrospective -->
+        <rect x="680" y="235" width="110" height="22" rx="4" fill="#ecc94b" fill-opacity="0.2" stroke="#ecc94b" stroke-width="1.5"/>
+        <text x="735" y="250" text-anchor="middle" font-size="9" font-weight="700" fill="#975a16">G5 @ 7/30 days</text>
+
+        <!-- Hard Gate bar -->
+        <rect x="125" y="145" width="935" height="28" rx="6" fill="#e53e3e" fill-opacity="0.08" stroke="#e53e3e" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="592" y="164" text-anchor="middle" font-size="10" font-weight="600" fill="#e53e3e">Hard Gate: exit-check.py at every step — exit code ≠ 0 = BLOCK</text>
+
+        <!-- Legend -->
+        <rect x="10" y="200" width="12" height="12" rx="2" fill="#4299e1"/>
+        <text x="28" y="211" font-size="10" fill="#4a5568">Skill (writes state)</text>
+        <rect x="150" y="200" width="12" height="12" rx="2" fill="#9f7aea" fill-opacity="0.3" stroke="#9f7aea" stroke-width="1"/>
+        <text x="168" y="211" font-size="10" fill="#4a5568">PM Gate (human confirm)</text>
+        <rect x="340" y="200" width="12" height="12" rx="2" fill="#e53e3e" fill-opacity="0.15" stroke="#e53e3e" stroke-width="1"/>
+        <text x="358" y="211" font-size="10" fill="#4a5568">Hard Gate (script)</text>
+        <rect x="500" y="200" width="12" height="12" rx="2" fill="#48bb78"/>
+        <text x="518" y="211" font-size="10" fill="#4a5568">Completion</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card-grid card-grid-3">
+    <div class="card" style="border-left:4px solid var(--blue)">
+      <h4 style="color:var(--blue); margin-bottom:8px">product-spec-builder</h4>
+      <p style="font-size:13px; color:var(--gray)">Input: idea/PRD → Output: L2-spec.md<br>Gate G0: PM confirms scope, KPIs, target audience</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--blue)">
+      <h4 style="color:var(--blue); margin-bottom:8px">design-brief-builder</h4>
+      <p style="font-size:13px; color:var(--gray)">Input: L2-spec → Output: L3-design.md<br>Gate G1: PM confirms design direction, brand alignment</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--green)">
+      <h4 style="color:var(--green); margin-bottom:8px">design-maker</h4>
+      <p style="font-size:13px; color:var(--gray)">Input: L3-design → Output: mockup/prototype<br>Visual authority: mockup > brief > spec</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--blue)">
+      <h4 style="color:var(--blue); margin-bottom:8px">dev-planner</h4>
+      <p style="font-size:13px; color:var(--gray)">Input: L3-design + mockup → Output: L4-plan.md<br>Gate G2: PM confirms sprint scope, priorities</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <h4 style="color:var(--orange); margin-bottom:8px">dev-builder</h4>
+      <p style="font-size:13px; color:var(--gray)">Input: L4-plan → Output: code implementation<br>Must sync with design mockup</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--red)">
+      <h4 style="color:var(--red); margin-bottom:8px">code-review</h4>
+      <p style="font-size:13px; color:var(--gray)">Two-stage review: automated + human<br>Gate G3/G3b: PM confirms quality, no regressions</p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Content Track Pipeline -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--orange)">3</div>
+    <h2>Content Track Pipeline 内容轨道</h2>
+    <span class="section-sub">topic → strategy → script → visual → tts → video</span>
+  </div>
+
+  <div class="card">
+    <div class="svg-container">
+      <svg viewBox="0 0 1100 300" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+        <defs>
+          <marker id="arrowR2" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#718096"/>
+          </marker>
+        </defs>
+
+        <!-- Topic node -->
+        <rect x="10" y="50" width="90" height="44" rx="22" fill="#ed8936" filter="url(#ds)"/>
+        <text x="55" y="77" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">topic</text>
+
+        <!-- CG0 Content Strategy -->
+        <line x1="100" y1="72" x2="130" y2="72" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR2)"/>
+        <rect x="135" y="40" width="130" height="64" rx="10" fill="#fff" stroke="#9f7aea" stroke-width="2" filter="url(#ds)"/>
+        <text x="200" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#6b46c1">Content</text>
+        <text x="200" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#6b46c1">Strategy</text>
+        <text x="200" y="95" text-anchor="middle" font-size="9" fill="#718096">→ L0-strategy</text>
+
+        <!-- CG0 gate -->
+        <rect x="150" y="115" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="200" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">CG0 Strategy</text>
+
+        <!-- script-writer -->
+        <line x1="265" y1="72" x2="295" y2="72" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR2)"/>
+        <rect x="300" y="40" width="130" height="64" rx="10" fill="#fff" stroke="#ed8936" stroke-width="2" filter="url(#ds)"/>
+        <text x="365" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#c05621">script-writer</text>
+        <text x="365" y="95" text-anchor="middle" font-size="9" fill="#718096">→ scenes.json + L2</text>
+
+        <!-- CG1 gate -->
+        <rect x="315" y="115" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="365" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">CG1 Creative</text>
+
+        <!-- visual-designer -->
+        <line x1="430" y1="72" x2="460" y2="72" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR2)"/>
+        <rect x="465" y="40" width="130" height="64" rx="10" fill="#fff" stroke="#ed8936" stroke-width="2" filter="url(#ds)"/>
+        <text x="530" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#c05621">visual-designer</text>
+        <text x="530" y="95" text-anchor="middle" font-size="9" fill="#718096">→ HTML slides</text>
+
+        <!-- CG2 gate (NOT skippable) -->
+        <rect x="480" y="115" width="110" height="22" rx="4" fill="#e53e3e" fill-opacity="0.15" stroke="#e53e3e" stroke-width="1.5"/>
+        <text x="535" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#e53e3e">CG2 NOT skippable</text>
+
+        <!-- tts-engine -->
+        <line x1="595" y1="72" x2="625" y2="72" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR2)"/>
+        <rect x="630" y="40" width="130" height="64" rx="10" fill="#fff" stroke="#ed8936" stroke-width="2" filter="url(#ds)"/>
+        <text x="695" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#c05621">tts-engine</text>
+        <text x="695" y="95" text-anchor="middle" font-size="9" fill="#718096">→ audio + subs</text>
+
+        <!-- CG3 gate -->
+        <rect x="645" y="115" width="100" height="22" rx="4" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="1.5"/>
+        <text x="695" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#6b46c1">CG3 Quality</text>
+
+        <!-- video-compositor -->
+        <line x1="760" y1="72" x2="790" y2="72" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR2)"/>
+        <rect x="795" y="40" width="140" height="64" rx="10" fill="#fff" stroke="#ed8936" stroke-width="2" filter="url(#ds)"/>
+        <text x="865" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#c05621">video-compositor</text>
+        <text x="865" y="95" text-anchor="middle" font-size="9" fill="#718096">→ final video</text>
+
+        <!-- Done -->
+        <line x1="935" y1="72" x2="965" y2="72" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR2)"/>
+        <rect x="970" y="50" width="90" height="44" rx="22" fill="#48bb78" filter="url(#ds)"/>
+        <text x="1015" y="77" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Done</text>
+
+        <!-- Dual Gate bar -->
+        <rect x="135" y="155" width="925" height="28" rx="6" fill="#ed8936" fill-opacity="0.08" stroke="#ed8936" stroke-width="1" stroke-dasharray="4,2"/>
+        <text x="597" y="174" text-anchor="middle" font-size="10" font-weight="600" fill="#c05621">Dual Gates: Hard Gate (exit-check.py) + Creative Gate (human judgment, NOT skippable by default)</text>
+
+        <!-- Post-completion gates -->
+        <rect x="135" y="200" width="140" height="22" rx="4" fill="#ecc94b" fill-opacity="0.2" stroke="#ecc94b" stroke-width="1.5"/>
+        <text x="205" y="215" text-anchor="middle" font-size="9" font-weight="700" fill="#975a16">CG4 Distribution</text>
+
+        <rect x="300" y="200" width="140" height="22" rx="4" fill="#ecc94b" fill-opacity="0.2" stroke="#ecc94b" stroke-width="1.5"/>
+        <text x="370" y="215" text-anchor="middle" font-size="9" font-weight="700" fill="#975a16">CG5 @ 7 days</text>
+
+        <!-- Legend -->
+        <rect x="10" y="250" width="12" height="12" rx="2" fill="#ed8936"/>
+        <text x="28" y="261" font-size="10" fill="#4a5568">Content Skill</text>
+        <rect x="140" y="250" width="12" height="12" rx="2" fill="#9f7aea" fill-opacity="0.3" stroke="#9f7aea" stroke-width="1"/>
+        <text x="158" y="261" font-size="10" fill="#4a5568">Creative Gate</text>
+        <rect x="280" y="250" width="12" height="12" rx="2" fill="#e53e3e" fill-opacity="0.15" stroke="#e53e3e" stroke-width="1"/>
+        <text x="298" y="261" font-size="10" fill="#4a5568">NOT Skippable Gate</text>
+        <rect x="440" y="250" width="12" height="12" rx="2" fill="#48bb78"/>
+        <text x="458" y="261" font-size="10" fill="#4a5568">Completion</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card-grid card-grid-3">
+    <div class="card" style="border-left:4px solid var(--purple)">
+      <h4 style="color:var(--purple); margin-bottom:8px">CG0 Content Strategy</h4>
+      <p style="font-size:13px; color:var(--gray)">Business Goal, Target Audience, KPI<br>Writes L0-strategy.md</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <h4 style="color:var(--orange); margin-bottom:8px">script-writer</h4>
+      <p style="font-size:13px; color:var(--gray)">Parses oral script → scenes.json + L2-spec<br>Hard Gate: validates JSON structure (2-15 scenes)</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <h4 style="color:var(--orange); margin-bottom:8px">visual-designer</h4>
+      <p style="font-size:13px; color:var(--gray)">Scene → HTML slides (via frontend-slides)<br>Creative Gate: select style from 3 previews</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <h4 style="color:var(--orange); margin-bottom:8px">tts-engine</h4>
+      <p style="font-size:13px; color:var(--gray)">TTS → audio/ + subtitles.json<br>CG2 NOT skippable: audio quality must be confirmed</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <h4 style="color:var(--orange); margin-bottom:8px">video-compositor</h4>
+      <p style="font-size:13px; color:var(--gray)">Compositing → final video<br>Creative Gate: approve final video quality</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--yellow)">
+      <h4 style="color:#975a16; margin-bottom:8px">Post-Completion</h4>
+      <p style="font-size:13px; color:var(--gray)">CG4: Distribution plan (platform, timing, UTM)<br>CG5: 7-day retrospective review</p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: State Files Hierarchy -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--blue)">4</div>
+    <h2>State Files Hierarchy 状态文件层级</h2>
+    <span class="section-sub">L0–L6 层级上下文，Dev/Content 双轨共享</span>
+  </div>
+
+  <div class="card">
+    <div class="state-row">
+      <div class="state-label" style="background:var(--purple); color:#fff">L0</div>
+      <div class="state-desc"><span class="content">L0-strategy.md</span> — Content Strategy (Business Goal, Target Audience, KPI). Content Track entry point.</div>
+    </div>
+    <div class="state-row">
+      <div class="state-label" style="background:var(--blue); color:#fff">L1</div>
+      <div class="state-desc"><span class="shared">L1-summary.md</span> — Project Overview. Shared across both tracks. Written by product-spec-builder.</div>
+    </div>
+    <div class="state-row">
+      <div class="state-label" style="background:var(--blue); color:#fff">L2</div>
+      <div class="state-desc"><span class="dev">Dev: L2-spec.md</span> Product Spec (enhanced with PM fields: acceptance criteria, priority, risk) · <span class="content">Content: L2-spec.md</span> Content Spec (enhanced with PM fields)</div>
+    </div>
+    <div class="state-row">
+      <div class="state-label" style="background:var(--blue); color:#fff">L3</div>
+      <div class="state-desc"><span class="dev">Dev: L3-design.md</span> Design Brief (enhanced with Brand + A11y requirements) · <span class="content">Content: L3-design.md</span> Visual Spec</div>
+    </div>
+    <div class="state-row">
+      <div class="state-label" style="background:var(--blue); color:#fff">L4</div>
+      <div class="state-desc"><span class="dev">Dev: L4-plan.md</span> Dev Plan (enhanced with PM fields: sprint scope, priorities) · <span class="content">Content: L4-plan.md</span> Pipeline Progress</div>
+    </div>
+    <div class="state-row">
+      <div class="state-label" style="background:var(--orange); color:#fff">L5</div>
+      <div class="state-desc"><span class="content">L5-media.md</span> — Media Asset Manifest. Content Track only. Tracks audio, video, subtitle files.</div>
+    </div>
+    <div class="state-row">
+      <div class="state-label" style="background:var(--orange); color:#fff">L6</div>
+      <div class="state-desc"><span class="content">L6-distribution.md</span> — Distribution Plan (Platform, Timing, UTM, Compliance). Content Track post-completion.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px; background: linear-gradient(135deg, var(--blue-light), var(--purple-light)); border: 1px solid var(--purple);">
+    <h4 style="color:var(--purple); margin-bottom:8px">📐 Visual Authority Chain</h4>
+    <p style="font-size:13px; color:var(--dark)">Dev Track: <strong>Design Mockup</strong> > Design Brief > Product Spec<br>Content Track: <strong>Final Video</strong> > Visual Spec > Content Spec > Strategy</p>
+    <p style="font-size:12px; color:var(--gray); margin-top:8px">Higher layers override lower layers. Ambiguity is always resolved in favor of the higher-fidelity artifact.</p>
+  </div>
+</div>
+
+<!-- Section 5: PM Gate Points Table -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--purple)">5</div>
+    <h2>PM Gate Points 决策门控点</h2>
+    <span class="section-sub">Hard Gate + Creative Gate at every decision point</span>
+  </div>
+
+  <div class="card" style="overflow-x:auto">
+    <table class="arch-table">
+      <thead>
+        <tr style="background:var(--purple-light)">
+          <th>Gate</th>
+          <th>Track</th>
+          <th>After Skill</th>
+          <th>Hard Gate (exit-check.py)</th>
+          <th>Creative Gate (Human)</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>G0</strong></td>
+          <td><span class="badge badge-green">Dev</span></td>
+          <td>product-spec-builder</td>
+          <td>L2-spec exists, has all required sections</td>
+          <td>PM confirms scope, KPIs, target audience</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong>G1</strong></td>
+          <td><span class="badge badge-green">Dev</span></td>
+          <td>design-brief-builder</td>
+          <td>L3-design exists, brand + a11y fields present</td>
+          <td>PM confirms design direction, brand alignment</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong>G2</strong></td>
+          <td><span class="badge badge-green">Dev</span></td>
+          <td>dev-planner</td>
+          <td>L4-plan exists, sprint scope defined</td>
+          <td>PM confirms priorities, sprint scope</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong>G3/G3b</strong></td>
+          <td><span class="badge badge-green">Dev</span></td>
+          <td>code-review</td>
+          <td>Two-stage review passed, no regressions</td>
+          <td>PM confirms quality, no scope creep</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong>G4</strong></td>
+          <td><span class="badge badge-green">Dev</span></td>
+          <td>release-builder</td>
+          <td>Release artifacts exist, version tagged</td>
+          <td>PM approves release</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong>G5</strong></td>
+          <td><span class="badge badge-green">Dev</span></td>
+          <td>Post-release</td>
+          <td>N/A (retrospective)</td>
+          <td>PM reviews @ 7/30 days</td>
+          <td><span class="badge badge-warning">warning</span></td>
+        </tr>
+        <tr style="background:var(--orange-light)">
+          <td><strong>CG0</strong></td>
+          <td><span class="badge badge-purple">Content</span></td>
+          <td>Content Strategy</td>
+          <td>L0-strategy exists, has business goal + KPI</td>
+          <td>PM confirms strategy, audience, KPI</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr style="background:var(--orange-light)">
+          <td><strong>CG1</strong></td>
+          <td><span class="badge badge-purple">Content</span></td>
+          <td>script-writer</td>
+          <td>scenes.json valid, 2-15 scenes</td>
+          <td>PM confirms platform, mood, scene breakdown</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr style="background:var(--orange-light)">
+          <td><strong>CG2</strong></td>
+          <td><span class="badge badge-purple">Content</span></td>
+          <td>visual-designer</td>
+          <td>HTML slides exist, style selected</td>
+          <td>PM selects style from 3 previews (NOT skippable)</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr style="background:var(--orange-light)">
+          <td><strong>CG3</strong></td>
+          <td><span class="badge badge-purple">Content</span></td>
+          <td>tts-engine</td>
+          <td>Audio + subtitles exist, duration matches</td>
+          <td>PM confirms audio quality</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr style="background:var(--orange-light)">
+          <td><strong>CG4</strong></td>
+          <td><span class="badge badge-purple">Content</span></td>
+          <td>video-compositor</td>
+          <td>Final video exists, format correct</td>
+          <td>PM approves final video quality</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr style="background:var(--orange-light)">
+          <td><strong>CG5</strong></td>
+          <td><span class="badge badge-purple">Content</span></td>
+          <td>Post-completion</td>
+          <td>N/A (retrospective)</td>
+          <td>PM reviews distribution @ 7 days</td>
+          <td><span class="badge badge-warning">warning</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:16px; background:var(--red-light); border:1px solid var(--red)">
+    <h4 style="color:var(--red); margin-bottom:8px">⚠️ Severity Levels</h4>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px">
+      <div><span class="badge badge-high">high</span> — Blocks progress. Must resolve before proceeding.</div>
+      <div><span class="badge badge-warning">warning</span> — PM should review. Can proceed with documented decision.</div>
+      <div><span class="badge badge-info">info</span> — Traceability only. No blocking action required.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 6: Spec Gap Protocol -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--yellow); color:#975a16">6</div>
+    <h2>Spec Gap Protocol 规格缺口协议</h2>
+    <span class="section-sub">当规格不完整时的升级路径</span>
+  </div>
+
+  <div class="card" style="overflow-x:auto">
+    <table class="arch-table">
+      <thead>
+        <tr style="background:var(--yellow-light)">
+          <th>Type</th>
+          <th>Description</th>
+          <th>Decision Maker</th>
+          <th>Action</th>
+          <th>Severity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:var(--blue)">A</strong></td>
+          <td>Feature in spec but description insufficient</td>
+          <td>PM</td>
+          <td>Complete documentation before proceeding</td>
+          <td><span class="badge badge-warning">warning</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--orange)">B</strong></td>
+          <td>Spec text exists but meaning ambiguous</td>
+          <td>PM + Designer</td>
+          <td>Joint interpretation session, document resolution</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--green)">C(small)</strong></td>
+          <td>Missing req &lt; 20% story points</td>
+          <td>PM</td>
+          <td>Absorb within OKR, document as known gap</td>
+          <td><span class="badge badge-info">info</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--red)">C(large)</strong></td>
+          <td>Missing req ≥ 20% story points</td>
+          <td>PM → Leadership</td>
+          <td>Escalate: add to backlog or re-scope sprint</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+        <tr>
+          <td><strong style="color:var(--purple)">D</strong></td>
+          <td>Strategic direction change needed</td>
+          <td>PM → Leadership</td>
+          <td>Escalate with recommendation, pause current work</td>
+          <td><span class="badge badge-high">high</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top:16px; background:var(--yellow-light); border:1px solid var(--yellow)">
+    <h4 style="color:#975a16; margin-bottom:8px">📋 Gap Resolution Flow</h4>
+    <div style="font-size:13px; color:var(--dark)">
+      <strong>Type A</strong>: exit-check.py detects missing fields → BLOCK → PM completes documentation → re-run exit-check<br>
+      <strong>Type B</strong>: Designer flags ambiguity → PM + Designer joint session → document resolution in L2-spec → proceed<br>
+      <strong>Type C(small)</strong>: PM absorbs within OKR → document as known gap in L4-plan → proceed<br>
+      <strong>Type C(large)</strong>: PM escalates to Leadership → add to backlog OR re-scope sprint → update L2-spec<br>
+      <strong>Type D</strong>: PM escalates with recommendation → Leadership decides → pause current work → update L0-strategy
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Dual Gate Mechanism -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--red)">7</div>
+    <h2>Dual Gate Mechanism 双网关机制</h2>
+    <span class="section-sub">Hard Gate (script) + Creative Gate (human)</span>
+  </div>
+
+  <div class="dual-gate">
+    <div class="gate-card" style="background:var(--red-light); border-color:var(--red)">
+      <h3 style="color:var(--red)">🛑 Hard Gate</h3>
+      <p style="font-size:13px; color:var(--gray); margin-bottom:12px">Deterministic, script-based gate. Zero LLM judgment.</p>
+      <ul>
+        <li style="color:var(--dark)">Implemented as <code>exit-check.py</code> Python script</li>
+        <li style="color:var(--dark)">Binary pass/fail: exit code 0 = pass, ≠ 0 = BLOCK</li>
+        <li style="color:var(--dark)">3-level severity: <span class="badge badge-high">high</span> <span class="badge badge-warning">warning</span> <span class="badge badge-info">info</span></li>
+        <li style="color:var(--dark)">Checks: file existence, JSON validity, required fields, value ranges</li>
+        <li style="color:var(--dark)">No exceptions: exit code ≠ 0 = stop immediately</li>
+        <li style="color:var(--dark)">Runs automatically after each skill completion</li>
+      </ul>
+      <div style="margin-top:12px; padding:10px; background:var(--card-bg); border-radius:6px; font-family:monospace; font-size:12px; color:var(--dark)">
+        <span style="color:var(--green)">✅</span> exit-check.py → exit 0 → PASS<br>
+        <span style="color:var(--red)">❌</span> exit-check.py → exit 1 → BLOCK<br>
+        <span style="color:var(--yellow)">⚠️</span> exit-check.py → exit 2 → WARNING
+      </div>
+    </div>
+
+    <div class="gate-card" style="background:var(--purple-light); border-color:var(--purple)">
+      <h3 style="color:var(--purple)">🧠 Creative Gate</h3>
+      <p style="font-size:13px; color:var(--gray); margin-bottom:12px">Human judgment gate. NOT skippable by default.</p>
+      <ul>
+        <li style="color:var(--dark)">Requires human confirmation at each PM gate point</li>
+        <li style="color:var(--dark)">Records choice in state file for traceability</li>
+        <li style="color:var(--dark)">Unhappy → retry current skill (not skip)</li>
+        <li style="color:var(--dark)">Dev Track: confirms scope, design, priorities, quality</li>
+        <li style="color:var(--dark)">Content Track: confirms platform, style, audio, video</li>
+        <li style="color:var(--dark)">Can only be skipped with explicit configuration override</li>
+      </ul>
+      <div style="margin-top:12px; padding:10px; background:var(--card-bg); border-radius:6px; font-size:12px; color:var(--dark)">
+        <span style="color:var(--green)">✅</span> Human approves → proceed to next skill<br>
+        <span style="color:var(--orange)">🔄</span> Human requests changes → retry current skill<br>
+        <span style="color:var(--red)">⛔</span> Cannot skip unless explicitly configured
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px; background: linear-gradient(135deg, var(--red-light), var(--purple-light)); border:1px solid var(--purple)">
+    <h4 style="color:var(--dark); margin-bottom:8px">🔒 Gate Interaction Rule</h4>
+    <p style="font-size:13px; color:var(--dark)">Both gates must pass for progress. Hard Gate failure = immediate BLOCK (no Creative Gate evaluation). Creative Gate failure = retry current skill (no skipping forward). This ensures <strong>deterministic quality</strong> AND <strong>human alignment</strong> at every decision point.</p>
+  </div>
+</div>
+
+<!-- Section 8: Steering Loop -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--yellow); color:#975a16">8</div>
+    <h2>Steering Loop 方向盘进化</h2>
+    <span class="section-sub">反馈积累 → 自动提案 → 人类确认 → 合并</span>
+  </div>
+
+  <div class="card">
+    <div class="svg-container">
+      <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+        <defs>
+          <marker id="arrowR3" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#718096"/>
+          </marker>
+          <marker id="arrowLoop" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="#ecc94b"/>
+          </marker>
+        </defs>
+
+        <!-- Feedback sources -->
+        <rect x="20" y="30" width="160" height="60" rx="10" fill="#4299e1" fill-opacity="0.12" stroke="#4299e1" stroke-width="2"/>
+        <text x="100" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#2b6cb0">Feedback Sources</text>
+        <text x="100" y="75" text-anchor="middle" font-size="10" fill="#718096">exit-check failures, PM reviews, quality issues</text>
+
+        <!-- FEEDBACK-OBSERVER -->
+        <line x1="180" y1="60" x2="220" y2="60" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR3)"/>
+        <rect x="225" y="30" width="160" height="60" rx="10" fill="#ed8936" fill-opacity="0.12" stroke="#ed8936" stroke-width="2"/>
+        <text x="305" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#c05621">FEEDBACK-OBSERVER</text>
+        <text x="305" y="75" text-anchor="middle" font-size="10" fill="#718096">detect → accumulate → classify</text>
+
+        <!-- Threshold check -->
+        <line x1="385" y1="60" x2="425" y2="60" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR3)"/>
+        <rect x="430" y="20" width="140" height="80" rx="10" fill="#ecc94b" fill-opacity="0.15" stroke="#ecc94b" stroke-width="2"/>
+        <text x="500" y="45" text-anchor="middle" font-size="11" font-weight="700" fill="#975a16">Threshold Met?</text>
+        <text x="500" y="62" text-anchor="middle" font-size="10" fill="#975a16">Dev: ≥3 same-type</text>
+        <text x="500" y="78" text-anchor="middle" font-size="10" fill="#975a16">PM: ≥2 same-type</text>
+        <text x="500" y="92" text-anchor="middle" font-size="10" fill="#975a16">Content: ≥5 same-type</text>
+
+        <!-- evolution-runner -->
+        <line x1="570" y1="60" x2="610" y2="60" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR3)"/>
+        <rect x="615" y="30" width="160" height="60" rx="10" fill="#48bb78" fill-opacity="0.12" stroke="#48bb78" stroke-width="2"/>
+        <text x="695" y="55" text-anchor="middle" font-size="12" font-weight="700" fill="#276749">evolution-runner</text>
+        <text x="695" y="75" text-anchor="middle" font-size="10" fill="#718096">generates proposal diff</text>
+
+        <!-- Human confirm -->
+        <line x1="695" y1="90" x2="695" y2="140" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR3)"/>
+        <rect x="615" y="145" width="160" height="60" rx="10" fill="#9f7aea" fill-opacity="0.15" stroke="#9f7aea" stroke-width="2.5"/>
+        <text x="695" y="170" text-anchor="middle" font-size="12" font-weight="700" fill="#6b46c1">👤 Human Confirm</text>
+        <text x="695" y="190" text-anchor="middle" font-size="10" fill="#9f7aea">MUST approve before merge</text>
+
+        <!-- Merge -->
+        <line x1="695" y1="205" x2="695" y2="240" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowR3)"/>
+        <rect x="615" y="245" width="160" height="50" rx="10" fill="#48bb78" fill-opacity="0.2" stroke="#48bb78" stroke-width="2"/>
+        <text x="695" y="275" text-anchor="middle" font-size="12" font-weight="700" fill="#276749">✅ Merge to SKILL.md</text>
+
+        <!-- Loop back arrow -->
+        <path d="M615,270 Q400,310 225,270 Q100,240 100,90" stroke="#ecc94b" stroke-width="2" fill="none" stroke-dasharray="6,3" marker-end="url(#arrowLoop)"/>
+        <text x="350" y="305" text-anchor="middle" font-size="10" fill="#975a16" font-style="italic">Feedback loop: merged changes affect future skill execution</text>
+
+        <!-- Safety note -->
+        <rect x="20" y="145" width="560" height="50" rx="8" fill="#fff5f5" stroke="#e53e3e" stroke-width="1.5"/>
+        <text x="300" y="168" text-anchor="middle" font-size="11" font-weight="700" fill="#e53e3e">⚠️ Safety Rule: evolution-runner CANNOT auto-write to SKILL.md or exit-check.py</text>
+        <text x="300" y="185" text-anchor="middle" font-size="10" fill="#e53e3e">All rule changes require human confirmation. Auto-recording and auto-proposal are allowed.</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card-grid card-grid-3">
+    <div class="loop-step" style="background:var(--blue-light)">
+      <div class="step-num" style="background:var(--blue)">1</div>
+      <div><strong>Detect</strong>: FEEDBACK-OBSERVER captures exit-check failures, PM reviews, and quality issues from <code>.claude/feedback/</code></div>
+    </div>
+    <div class="loop-step" style="background:var(--orange-light)">
+      <div class="step-num" style="background:var(--orange)">2</div>
+      <div><strong>Accumulate</strong>: Classify feedback by type. Track counts until threshold is met (≥3 dev / ≥2 PM / ≥5 content).</div>
+    </div>
+    <div class="loop-step" style="background:var(--yellow-light)">
+      <div class="step-num" style="background:var(--yellow); color:#975a16">3</div>
+      <div><strong>Propose</strong>: evolution-runner generates a proposal diff for SKILL.md or exit-check.py changes. Cannot auto-apply.</div>
+    </div>
+    <div class="loop-step" style="background:var(--purple-light)">
+      <div class="step-num" style="background:var(--purple)">4</div>
+      <div><strong>Confirm</strong>: Human reviews the proposal diff. Approve → merge. Reject → discard. Modify → re-propose.</div>
+    </div>
+    <div class="loop-step" style="background:var(--green-light)">
+      <div class="step-num" style="background:var(--green)">5</div>
+      <div><strong>Merge</strong>: Approved changes are merged into SKILL.md and/or exit-check.py. New rules take effect immediately.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 9: Sub-Agent Context Firewall -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <div class="section-number" style="background:var(--orange)">9</div>
+    <h2>Sub-Agent Context Firewall 执行隔离</h2>
+    <span class="section-sub">每个 Sub-Agent 都是全新实例，零继承上下文</span>
+  </div>
+
+  <div class="card">
+    <div class="svg-container">
+      <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+        <defs>
+          <marker id="arrowDown2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#718096"/>
+          </marker>
+          <marker id="arrowRight3" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#4299e1"/>
+          </marker>
+        </defs>
+
+        <!-- Orchestrator -->
+        <rect x="300" y="10" width="300" height="60" rx="12" fill="#4299e1" filter="url(#ds)"/>
+        <text x="450" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">🧭 Orchestrator</text>
+        <text x="450" y="58" text-anchor="middle" font-size="10" fill="#fff">Reads CLAUDE.md + state + Skills</text>
+
+        <!-- State files -->
+        <rect x="680" y="20" width="180" height="40" rx="8" fill="#4299e1" fill-opacity="0.15" stroke="#4299e1" stroke-width="1.5"/>
+        <text x="770" y="45" text-anchor="middle" font-size="11" font-weight="600" fill="#2b6cb0">.claude/state/</text>
+
+        <!-- Arrow: Orchestrator → State -->
+        <line x1="600" y1="40" x2="675" y2="40" stroke="#4299e1" stroke-width="1.5" marker-end="url(#arrowRight3)"/>
+
+        <!-- Task Package -->
+        <rect x="300" y="100" width="300" height="50" rx="10" fill="#ed8936" fill-opacity="0.12" stroke="#ed8936" stroke-width="2"/>
+        <text x="450" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="#c05621">📦 Task Package</text>
+        <text x="450" y="142" text-anchor="middle" font-size="10" fill="#718096">Skill instructions + relevant state files only</text>
+
+        <!-- Arrow: Orchestrator → Task Package -->
+        <line x1="450" y1="70" x2="450" y2="95" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowDown2)"/>
+
+        <!-- Firewall wall -->
+        <rect x="50" y="175" width="800" height="40" rx="6" fill="#e53e3e" fill-opacity="0.08" stroke="#e53e3e" stroke-width="2" stroke-dasharray="8,4"/>
+        <text x="450" y="200" text-anchor="middle" font-size="12" font-weight="700" fill="#e53e3e">🔥 CONTEXT FIREWALL — No inherited conversation, no memory, no shortcuts</text>
+
+        <!-- Sub-Agent instances -->
+        <rect x="80" y="240" width="160" height="70" rx="10" fill="#fff" stroke="#48bb78" stroke-width="2" filter="url(#ds)"/>
+        <text x="160" y="265" text-anchor="middle" font-size="11" font-weight="700" fill="#276749">Sub-Agent A</text>
+        <text x="160" y="282" text-anchor="middle" font-size="9" fill="#718096">Fresh instance</text>
+        <text x="160" y="298" text-anchor="middle" font-size="9" fill="#718096">Reads: Task Pkg only</text>
+
+        <rect x="370" y="240" width="160" height="70" rx="10" fill="#fff" stroke="#48bb78" stroke-width="2" filter="url(#ds)"/>
+        <text x="450" y="265" text-anchor="middle" font-size="11" font-weight="700" fill="#276749">Sub-Agent B</text>
+        <text x="450" y="282" text-anchor="middle" font-size="9" fill="#718096">Fresh instance</text>
+        <text x="450" y="298" text-anchor="middle" font-size="9" fill="#718096">Reads: Task Pkg only</text>
+
+        <rect x="660" y="240" width="160" height="70" rx="10" fill="#fff" stroke="#48bb78" stroke-width="2" filter="url(#ds)"/>
+        <text x="740" y="265" text-anchor="middle" font-size="11" font-weight="700" fill="#276749">Sub-Agent C</text>
+        <text x="740" y="282" text-anchor="middle" font-size="9" fill="#718096">Fresh instance</text>
+        <text x="740" y="298" text-anchor="middle" font-size="9" fill="#718096">Reads: Task Pkg only</text>
+
+        <!-- Arrows: Task Package → Sub-Agents -->
+        <line x1="350" y1="150" x2="160" y2="235" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowDown2)"/>
+        <line x1="450" y1="150" x2="450" y2="235" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowDown2)"/>
+        <line x1="550" y1="150" x2="740" y2="235" stroke="#718096" stroke-width="1.5" marker-end="url(#arrowDown2)"/>
+
+        <!-- State write-back -->
+        <rect x="300" y="340" width="300" height="45" rx="8" fill="#4299e1" fill-opacity="0.15" stroke="#4299e1" stroke-width="1.5"/>
+        <text x="450" y="367" text-anchor="middle" font-size="11" font-weight="600" fill="#2b6cb0">📝 Write results → .claude/state/</text>
+
+        <!-- Arrows: Sub-Agents → State write-back -->
+        <line x1="160" y1="310" x2="350" y2="340" stroke="#4299e1" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowRight3)"/>
+        <line x1="450" y1="310" x2="450" y2="335" stroke="#4299e1" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowDown2)"/>
+        <line x1="740" y1="310" x2="550" y2="340" stroke="#4299e1" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrowRight3)"/>
+
+        <!-- No direct communication X marks -->
+        <line x1="245" y1="255" x2="365" y2="295" stroke="#e53e3e" stroke-width="2"/>
+        <line x1="365" y1="255" x2="245" y2="295" stroke="#e53e3e" stroke-width="2"/>
+        <line x1="535" y1="255" x2="655" y2="295" stroke="#e53e3e" stroke-width="2"/>
+        <line x1="655" y1="255" x2="535" y2="295" stroke="#e53e3e" stroke-width="2"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="card-grid card-grid-2">
+    <div class="card" style="border-left:4px solid var(--blue)">
+      <h4 style="color:var(--blue); margin-bottom:8px">🧭 Orchestrator</h4>
+      <ul style="font-size:13px; color:var(--gray); padding-left:16px">
+        <li>Reads CLAUDE.md for routing rules</li>
+        <li>Reads current state files for context</li>
+        <li>Reads Skill definitions for methodology</li>
+        <li>Delegates Task Packages to Sub-Agents</li>
+        <li>Collects results from state files</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--red)">
+      <h4 style="color:var(--red); margin-bottom:8px">🔥 Firewall Rules</h4>
+      <ul style="font-size:13px; color:var(--gray); padding-left:16px">
+        <li>Each Sub-Agent is a <strong>fresh instance</strong></li>
+        <li><strong>No inherited conversation</strong> from previous tasks</li>
+        <li><strong>No memory</strong> of other Sub-Agent tasks</li>
+        <li>State passes <strong>only through</strong> <code>.claude/state/</code> files</li>
+        <li>No direct Sub-Agent ↔ Sub-Agent communication</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--green)">
+      <h4 style="color:var(--green); margin-bottom:8px">📦 Task Package Contents</h4>
+      <ul style="font-size:13px; color:var(--gray); padding-left:16px">
+        <li>Skill instructions (from SKILL.md)</li>
+        <li>Relevant state files (L1-L6 as needed)</li>
+        <li>Exit criteria (from exit-check.py)</li>
+        <li>Context scope (only what this task needs)</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange)">
+      <h4 style="color:var(--orange); margin-bottom:8px">📝 Write-Back Protocol</h4>
+      <ul style="font-size:13px; color:var(--gray); padding-left:16px">
+        <li>Sub-Agent writes results to state files</li>
+        <li>Orchestrator reads updated state for next task</li>
+        <li>exit-check.py validates before state is committed</li>
+        <li>Failed exit-check = state NOT updated = BLOCK</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; padding:40px 20px; color:var(--gray); font-size:13px; border-top:1px solid var(--border); margin-top:40px">
+  <p>Reliable Dev Harness — Architecture Overview</p>
+  <p style="margin-top:4px">双轨道产品开发框架 · 规格驱动 + 硬门纪律</p>
+  <p style="margin-top:8px; font-size:11px; color:#a0aec0">Generated from project documentation · .claude/ architecture</p>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

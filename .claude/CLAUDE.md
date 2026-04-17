@@ -70,6 +70,60 @@
 
 ---
 
+## PM Decision Points（产品决策点）
+
+以下时刻需要 PM 决策，Orchestrator 必须在此暂停并请求用户确认：
+
+### Dev Track PM 决策点
+
+1. **G0: PM Discovery Gate** — product-spec-builder 输出后
+   - Feature 选择、Scope 边界、Metrics 定义、MVP 边界、优先级排序
+2. **G1: PM Direction Gate** — design-brief-builder 输出后
+   - 设计方向与业务目标一致性确认
+3. **G2: PM Scope Gate** — dev-planner 输出后
+   - Phase 划分与业务优先级对齐、MVP 范围确认
+4. **G3: PM Compliance Gate** — code-review Stage 1
+   - Spec 条目验证、scope creep 检测、user impact 评估
+5. **G3b: PM Gap Protocol** — 实现过程中发现 spec 缺口时
+   - 缺口分类(A/B/C/D/E) → 对应决策和升级路径
+6. **G4: PM Release Gate** — release-builder 之前
+   - Go/No-Go 决策、Smoke test 范围确认、回滚标准确认
+7. **G5: PM Validation Gate** — 上线后 7/30 天
+   - Metrics 与 spec 对齐验证、GO/PIVOT/KILL 决策
+
+### Content Track PM 决策点
+
+8. **CG0: PM Content Strategy Gate** — script-writer 之前
+   - 输入：原始主题/口播稿
+   - PM 决策：目标受众（年龄/兴趣/痛点）、业务目标（品牌认知/引流/转化）、KPI（播放量/完播率/互动率/转化率）、核心信息优先级、差异化策略、合规要求
+   - Hard Gate：L0-strategy.md 存在且包含目标受众 + 业务目标 + KPI
+   - Creative Gate：用户确认内容方向
+   - 产出：L0-strategy.md
+9. **CG1: PM Visual Direction Gate** — visual-designer 风格选择时
+   - 品牌调性确认、可访问性
+10. **CG2: PM Voice Direction Gate** — tts-engine 风格选择时
+    - 声音品牌确认（不可跳过）
+11. **CG3: PM Final Review Gate** — video-compositor 之后
+    - 最终视频确认、CTA 有效性
+12. **CG4: PM Distribution Gate** — 发布前
+    - 分发元数据、UTM 追踪、版权
+13. **CG5: PM Content Validation Gate** — 发布后 7 天
+    - KPI 达标、内容迭代决策
+
+### Spec Gap Protocol
+
+当实现过程中发现 L2-spec 模糊或遗漏时：
+
+| 类型 | 描述 | 决策者 | 处理方式 |
+|------|------|--------|---------|
+| A | 功能在 spec 中但描述不够详细 | PM | 补全文档到 L2-spec |
+| B | spec 有相关描述但含义不明确 | PM + Designer | 联合决定解释方式，更新 spec |
+| C（小） | spec 缺少需求，影响 <20% story points | PM | 在 OKR 范围内消化 |
+| C（大） | spec 缺少需求，影响 ≥20% story points | PM → 领导层 | 升级到领导层 |
+| D | 实现过程中需要战略方向调整 | PM → 领导层 | 升级到领导层带推荐方案 |
+
+---
+
 ## Sub-Agent 委派协议
 
 当需要执行具体任务时，你按以下格式打包上下文并启动新实例：
@@ -163,7 +217,7 @@ content/visual-designer:
   图片步骤 → [Creative Gate: 图片确认]
   HTML步骤 → [Hard Gate] → [Creative Gate: 风格确认]
     ↓ 通过
-content/tts-engine → [Hard Gate] → [Creative Gate: TTS风格 (可跳过)]
+content/tts-engine → [Hard Gate] → [Creative Gate: TTS风格 (**不可跳过**, CG2)]
     ↓ 通过
 content/video-compositor → [Hard Gate] → [Creative Gate: 最终视频确认]
     ↓ 通过

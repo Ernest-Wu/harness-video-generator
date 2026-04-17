@@ -1,6 +1,6 @@
 # Reliable Dev Harness
 
-A dual-track product development harness combining pedagogic-first skill design with hard-gate engineering discipline. Supports both software development and content production workflows.
+A dual-track product development harness combining spec-driven skill design with hard-gate engineering discipline. Supports both software development and content production workflows.
 
 [中文文档](README-zh.md)
 
@@ -91,43 +91,51 @@ python3 .claude/check-harness.py
 
 ## Architecture
 
+📊 [View Interactive Architecture Diagram](architecture.html)
+
 ```
 .claude/
-├── CLAUDE.md                          # Orchestrator protocol (dual-domain routing)
+├── CLAUDE.md                          # Orchestrator protocol (dual-domain + PM decision gates)
 ├── router.py                          # Skill matcher with --domain filter
 ├── check-harness.py                   # Dual-track health check (dev + content)
 │
 ├── skills/
 │   ├── dev/                           # Software development domain
-│   │   ├── product-spec-builder/      #   PRD → L2-spec
-│   │   ├── design-brief-builder/      #   Design brief → L3-design
+│   │   ├── product-spec-builder/      #   PRD → L2-spec [G0 PM Discovery Gate]
+│   │   ├── design-brief-builder/      #   Design brief → L3-design [G1 PM Direction Gate]
 │   │   ├── design-maker/              #   Design mockup generation
-│   │   ├── dev-planner/               #   Development planning → L4-plan
+│   │   ├── dev-planner/               #   Development planning → L4-plan [G2 PM Scope Gate]
 │   │   ├── dev-builder/               #   Implementation
 │   │   ├── bug-fixer/                 #   Bug resolution
-│   │   ├── code-review/               #   Two-stage code review
-│   │   └── release-builder/           #   Release packaging
+│   │   ├── code-review/               #   Two-stage code review [G3 PM Compliance Gate + Spec Gap]
+│   │   └── release-builder/           #   Release packaging [G4 PM Release Gate]
 │   │
 │   └── content/                        # Content production domain
-│       ├── script-writer/             #   口播文稿 → scenes.json + L2-spec
-│       ├── visual-designer/           #   Scene → HTML slides (via frontend-slides)
-│       ├── tts-engine/                #   TTS → audio/ + subtitles.json
-│       └── video-compositor/          #   Compositing → final video
+│       ├── script-writer/             #   口播文稿 → scenes.json + L2-spec [CG0]
+│       ├── visual-designer/           #   Scene → HTML slides [CG1 Visual Direction Gate]
+│       ├── tts-engine/                #   TTS → audio/ + subtitles.json [CG2 Voice Direction Gate - NOT skippable]
+│       └── video-compositor/          #   Compositing → final video [CG3 Final Review Gate]
 │
 ├── hooks/                              # Sensors (检查层)
 │   ├── pre-commit-check.sh            #   Dev domain
 │   ├── stop-gate.sh                   #   Dev domain
 │   └── content-validator.sh           #   Content domain
 │
-├── state/                              # Hierarchical context (L1-L5)
+├── state/                              # Hierarchical context (L0-L6)
+│   ├── L0-strategy.md                #   Content Strategy (Business Goal, Audience, KPI)
 │   ├── L1-summary.md                  #   Project overview (shared)
 │   ├── L2-spec.md                     #   Dev: Product Spec / Content: Content Spec
 │   ├── L3-design.md                   #   Dev: Design Brief / Content: Visual Spec
 │   ├── L4-plan.md                     #   Dev: Dev Plan / Content: Pipeline Progress
-│   └── L5-media.md                   #   Content: Media Asset Manifest
+│   ├── L5-media.md                   #   Content: Media Asset Manifest
+│   └── L6-distribution.md             #   Distribution Plan (Platform, Timing, UTM, Compliance)
 │
 ├── feedback/                           # Steering Loop inputs
 ├── agents/                             # Sub-Agent role definitions
+│   ├── IMPLEMENTER.md
+│   ├── REVIEWER.md
+│   ├── FEEDBACK-OBSERVER.md           #   PM/Content/Dev feedback types (3-domain graduation)
+│   └── EVOLUTION-RUNNER.md
 │
 └── docs/
     ├── HARNESS-ARCHITECTURE.md         #   Architecture documentation (dual-track)
@@ -145,6 +153,7 @@ The harness now supports two domains, each with its own skill chain and gate typ
 idea → product-spec-builder → design-brief-builder → design-maker
   → dev-planner → dev-builder → code-review → release-builder
   [Hard Gate: exit-check.py at each step]
+  [PM Gates: G0→G1→G2→G3+G3b→G4→G5 with human decision points]
 ```
 
 ### Content Track (Oral Video Production)
@@ -152,6 +161,7 @@ idea → product-spec-builder → design-brief-builder → design-maker
 ```
 script/topic → script-writer → visual-designer → tts-engine → video-compositor
   [Hard Gate: exit-check.py] + [Creative Gate: human confirmation]
+  [PM Gates: CG0→CG1→CG2→CG3→CG4→CG5 with human decision points]
 ```
 
 Content track uses **Dual Gates**: deterministic exit-check.py (Hard Gate) PLUS human judgment points (Creative Gate) for style, pacing, and quality decisions.

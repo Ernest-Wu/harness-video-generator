@@ -49,7 +49,41 @@ Lists a naming inconsistency in Stage 2.
 ### Bad Review
 Says looks good with no actionable issues.
 
-## Common Pitfalls
+## Spec Gap Protocol (G3b)
+
+When implementation discovers that L2-spec is ambiguous or missing requirements, classify the gap and follow the corresponding decision path:
+
+| Type | Description | Decision Maker | Action |
+|------|-----------|---------------|--------|
+| **A** | Feature in spec but description insufficient | PM | Document completion → update L2-spec |
+| **B** | Spec text exists but meaning ambiguous | PM + Designer | Joint interpretation → update L2-spec |
+| **C (small)** | Missing requirement, impact < 20% story points | PM | Absorb within OKR → update spec and plan |
+| **C (large)** | Missing requirement, impact ≥ 20% story points | PM → Leadership | Escalate to leadership |
+| **D** | Strategic direction change needed during implementation | PM → Leadership | Escalate with recommendation |
+| **E** | Discovery contradicts spec assumption | PM | Re-evaluate spec → update or pivot |
+
+### Spec Gap Recording Format
+
+Record all gaps in L4-plan.md under "Spec Gaps" section:
+
+```markdown
+### GAP-001: {brief description}
+- **Type**: A/B/C/D/E
+- **Discovered by**: {Agent/Role}
+- **Discovered at**: {Phase/Task}
+- **Decision**: {decision content}
+- **Impact**: {scope of impact}
+- **Status**: Open/Resolved/Deferred
+```
+
+### Reviewer Responsibilities During Spec Gaps
+
+1. **Classify** the gap type (A-E) based on the table above
+2. **Record** the gap in L4-plan.md "Spec Gaps" section
+3. **Pause** implementation for type C(large), D, E — request PM decision before continuing
+4. **Continue** for type A, B, C(small) — document the gap and the assumed interpretation, flag for PM review
+
+### Common Pitfalls
 
 ### Pitfall 1: Leniency Bias
 **Symptom:** The code looks good overall. Just a small nitpick.
@@ -62,6 +96,14 @@ Says looks good with no actionable issues.
 ### Pitfall 3: Stage 1 HIGH Issues But Proceeding to Stage 2
 **Symptom:** Noticing a missing feature but still checking code quality.
 **Fix:** Stop at Stage 1. Mark it blocking.
+
+### Pitfall 4: Ignoring Scope Creep
+**Symptom:** Implementation adds features not in spec, reviewer doesn't flag it.
+**Fix:** Flag every feature not traceable to a spec item. Classify as Spec Gap type A-E.
+
+### Pitfall 5: Missing User Impact on HIGH Issues
+**Symptom:** Marking an issue as HIGH without explaining who it affects.
+**Fix:** Every HIGH issue must include user impact assessment for PM decision.
 
 ## References
 
