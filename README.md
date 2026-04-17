@@ -2,6 +2,8 @@
 
 A dual-track product development harness combining pedagogic-first skill design with hard-gate engineering discipline. Supports both software development and content production workflows.
 
+[中文文档](README-zh.md)
+
 ## Core Idea
 
 > Vibe Coding fails not because models are dumb, but because there is no system around the model.
@@ -14,20 +16,77 @@ This harness provides:
 
 ## Quick Start
 
+### Step 1: Install in your project
+
 ```bash
-# 1. Verify harness health (both domains)
+# Option A: Copy directly (recommended for existing projects)
+cp -r /path/to/harness-video-generator/.claude /your/project/
+
+# Option B: Use the init script
+cd /your/project
+/path/to/harness-video-generator/scripts/init-harness.sh .
+
+# Verify installation
 python3 .claude/check-harness.py
+# → ✅ Harness health check passed. Both dev/ and content/ domains are intact.
+```
 
-# 2. Route a dev request to the right Skill
-python3 .claude/router.py "I want to build a writing tool"
-# → dev/product-spec-builder
+### Step 2: Use Dev Track (Software Development)
 
-# 3. Route a content request to the right Skill
+Start a conversation with Claude Code in your project. The Orchestrator reads `CLAUDE.md` and routes automatically:
+
+```text
+You: "I want to build a user authentication system"
+
+Claude will:
+  1. Route to dev/product-spec-builder → writes L2-spec
+  2. Run exit-check.py → blocks if spec is incomplete
+  3. You confirm the spec (Creative Gate)
+  4. Route to dev/design-brief-builder → writes L3-design
+  5. ... continues through dev-planner → dev-builder → code-review → release
+  6. Each step: Hard Gate (exit-check.py) blocks bad output
+```
+
+**You do**: Confirm specs, make design decisions, review quality.
+**Harness does**: Enforce flow, run validation, block incomplete work.
+
+### Step 3: Use Content Track (Oral Video Production)
+
+```text
+You: "帮我把这个口播稿做成短视频"
+
+Claude will:
+  1. Route to content/script-writer → parses script → scenes.json
+  2. Hard Gate: validates JSON structure
+  3. Creative Gate: you confirm platform (9:16/16:9/4:5) + Mood + scene breakdown
+  4. Route to content/visual-designer → generates HTML slides
+  5. Creative Gate: you select style from 3 previews
+  6. Route to content/tts-engine → generates audio + subtitles
+  7. Route to content/video-compositor → renders final video
+  8. Creative Gate: you approve the final video
+```
+
+**You do**: Choose platform/style, confirm scenes, approve quality.
+**Harness does**: Generate assets, validate outputs, ensure pipeline consistency.
+
+### Step 4: CLI Tools (optional)
+
+```bash
+# Check which skill a request routes to
+python3 .claude/router.py "build login page"
+# → dev/dev-builder
+
 python3 .claude/router.py "制作口播视频" --domain content
 # → content/script-writer
 
-# 4. Validate content skill output
-bash .claude/hooks/content-validator.sh script-writer
+# Validate a content skill's output
+python3 .claude/skills/content/script-writer/exit-check.py
+# → ❌ [file_missing] scenes.json does not exist
+# → ✅ script-writer exit check passed
+
+# Health check
+python3 .claude/check-harness.py
+# → ✅ Harness health check passed
 ```
 
 ## Architecture
