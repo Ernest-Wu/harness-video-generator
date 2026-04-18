@@ -1,3 +1,10 @@
+---
+name: script-writer
+description: 将 Markdown 口播文稿转化为结构化场景拆分（scenes.json）和内容规格（L2-spec.md）。口播视频生产线的起点。
+intent: 负责语义段落切分（非按标题硬切）、平台选择、Mood 选择、visualBeats 标记，输出结构化的 scenes.json 和 L2-spec.md 供下游 visual-designer 使用。
+type: component
+---
+
 # script-writer — 口播文稿解析与场景拆分
 
 ## Purpose

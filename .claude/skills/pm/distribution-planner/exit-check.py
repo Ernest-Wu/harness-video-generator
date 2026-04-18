@@ -9,21 +9,20 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
+
 PROJECT_ROOT = Path(".")
 STATE_DIR = PROJECT_ROOT / ".claude" / "state"
 L6_DISTRIBUTION = STATE_DIR / "L6-distribution.md"
 
-ISSUES = []
-
 
 def check_l6_exists():
     if not L6_DISTRIBUTION.exists():
-        ISSUES.append(
-            (
-                "high",
-                "file_missing",
-                "L6-distribution.md does not exist — create distribution plan before publishing",
-            )
+        add_issue(
+            "file_missing",
+            "L6-distribution.md does not exist — create distribution plan before publishing",
+            level="high",
         )
         return False
     return True
@@ -42,12 +41,10 @@ def check_required_sections():
 
     for section, code in required.items():
         if section not in content:
-            ISSUES.append(
-                (
-                    "high",
-                    code,
-                    f"L6-distribution.md missing required section: {section}",
-                )
+            add_issue(
+                code,
+                f"L6-distribution.md missing required section: {section}",
+                level="high",
             )
 
 
@@ -59,12 +56,10 @@ def check_platform_count():
 
     platform_count = content.count("### ")
     if platform_count < 1:
-        ISSUES.append(
-            (
-                "high",
-                "no_platforms",
-                "L6-distribution.md must list at least one platform",
-            )
+        add_issue(
+            "no_platforms",
+            "L6-distribution.md must list at least one platform",
+            level="high",
         )
 
 
@@ -75,12 +70,10 @@ def check_utm_tracking():
     content = L6_DISTRIBUTION.read_text(encoding="utf-8")
 
     if "## UTM Tracking" not in content:
-        ISSUES.append(
-            (
-                "warning",
-                "utm_missing",
-                "L6-distribution.md missing UTM Tracking section — CG5 validation will be impossible without tracking",
-            )
+        add_issue(
+            "utm_missing",
+            "L6-distribution.md missing UTM Tracking section — CG5 validation will be impossible without tracking",
+            level="warning",
         )
 
 
@@ -95,12 +88,10 @@ def check_compliance_items():
         unchecked = section.count("[ ]")
         checked = section.count("[x]")
         if unchecked == 0 and checked == 0:
-            ISSUES.append(
-                (
-                    "warning",
-                    "compliance_empty",
-                    "Compliance Checklist has no items — add at least copyright and ad disclosure checks",
-                )
+            add_issue(
+                "compliance_empty",
+                "Compliance Checklist has no items — add at least copyright and ad disclosure checks",
+                level="warning",
             )
 
 
@@ -111,16 +102,7 @@ def main() -> int:
     check_utm_tracking()
     check_compliance_items()
 
-    if not ISSUES:
-        print("✅ PM Distribution Gate (CG4) exit check passed.")
-        return 0
-
-    print("❌ PM Distribution Gate (CG4) exit check FAILED:\n")
-    for level, code, detail in ISSUES:
-        icon = "🔴" if level == "high" else "🟡"
-        print(f"  {icon} [{level.upper()}] {code}: {detail}")
-    print()
-    return 1
+    print_and_exit("PM Distribution Gate")
 
 
 if __name__ == "__main__":

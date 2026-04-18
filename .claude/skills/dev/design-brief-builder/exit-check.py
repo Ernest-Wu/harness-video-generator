@@ -15,38 +15,35 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
+
 DESIGN_PATH = Path(".claude/state/L3-design.md")
 SPEC_PATH = Path(".claude/state/L2-spec.md")
-
-ISSUES = []
 
 
 def check():
     # ── 1. Design brief must exist ────────────────────────────
     if not DESIGN_PATH.exists():
-        ISSUES.append(("high", "file_missing", f"{DESIGN_PATH} does not exist."))
+        add_issue("file_missing", f"{DESIGN_PATH} does not exist.", level="high")
         return
 
     text = DESIGN_PATH.read_text(encoding="utf-8")
 
     # ── 2. Must contain at least one hex color ─────────────────
     if not re.search(r"#[0-9A-Fa-f]{3,6}", text):
-        ISSUES.append(
-            (
-                "high",
-                "color_missing",
-                "No hex color values found. Design Brief must specify exact colors.",
-            )
+        add_issue(
+            "color_missing",
+            "No hex color values found. Design Brief must specify exact colors.",
+            level="high",
         )
 
     # ── 3. Must mention interaction or motion ─────────────────
     if not re.search(r"interaction|motion|animation|transition", text, re.IGNORECASE):
-        ISSUES.append(
-            (
-                "warning",
-                "interaction_missing",
-                "No interaction or motion guidelines found.",
-            )
+        add_issue(
+            "interaction_missing",
+            "No interaction or motion guidelines found.",
+            level="warning",
         )
 
     # ── 4. PM Direction Gate (G1) checks ──────────────────────
@@ -75,30 +72,24 @@ def check_brand_guideline(design_content):
     )
 
     if has_brand:
-        ISSUES.append(
-            (
-                "info",
-                "brand_guideline_found",
-                "Design brief references brand guidelines.",
-            )
+        add_issue(
+            "brand_guideline_found",
+            "Design brief references brand guidelines.",
+            level="info",
         )
     elif has_no_brand:
-        ISSUES.append(
-            (
-                "info",
-                "no_brand_constraint_explicit",
-                "Design brief explicitly states no brand constraints. This is acceptable.",
-            )
+        add_issue(
+            "no_brand_constraint_explicit",
+            "Design brief explicitly states no brand constraints. This is acceptable.",
+            level="info",
         )
     else:
-        ISSUES.append(
-            (
-                "warning",
-                "brand_guideline_missing",
-                "Design brief has no brand guideline reference and does not explicitly "
-                "state 'no brand constraints'. PM Direction Gate G1 requires either: "
-                "(1) brand guideline reference, or (2) explicit 'no brand constraints' declaration.",
-            )
+        add_issue(
+            "brand_guideline_missing",
+            "Design brief has no brand guideline reference and does not explicitly "
+            "state 'no brand constraints'. PM Direction Gate G1 requires either: "
+            "(1) brand guideline reference, or (2) explicit 'no brand constraints' declaration.",
+            level="warning",
         )
 
 
@@ -110,34 +101,28 @@ def check_accessibility(design_content):
         re.IGNORECASE,
     )
     if has_a11y:
-        ISSUES.append(
-            (
-                "info",
-                "accessibility_found",
-                "Design brief includes accessibility guidelines.",
-            )
+        add_issue(
+            "accessibility_found",
+            "Design brief includes accessibility guidelines.",
+            level="info",
         )
     else:
-        ISSUES.append(
-            (
-                "warning",
-                "accessibility_missing",
-                "Design brief has no accessibility statement. "
-                "PM Direction Gate G1: specify WCAG level or explicitly "
-                "state accessibility requirements.",
-            )
+        add_issue(
+            "accessibility_missing",
+            "Design brief has no accessibility statement. "
+            "PM Direction Gate G1: specify WCAG level or explicitly "
+            "state accessibility requirements.",
+            level="warning",
         )
 
 
 def check_spec_alignment(design_content):
     """PM Direction Gate G1: Verify design brief aligns with spec."""
     if not SPEC_PATH.exists():
-        ISSUES.append(
-            (
-                "info",
-                "spec_not_found_for_alignment",
-                "L2-spec.md not found. Cannot verify design-spec alignment.",
-            )
+        add_issue(
+            "spec_not_found_for_alignment",
+            "L2-spec.md not found. Cannot verify design-spec alignment.",
+            level="info",
         )
         return
 
@@ -156,56 +141,17 @@ def check_spec_alignment(design_content):
     )
 
     if spec_has_target_user and not design_has_user_ref:
-        ISSUES.append(
-            (
-                "warning",
-                "design_missing_user_alignment",
-                "L2-spec defines target users but design brief does not reference them. "
-                "PM Direction Gate G1: design direction must align with user persona.",
-            )
+        add_issue(
+            "design_missing_user_alignment",
+            "L2-spec defines target users but design brief does not reference them. "
+            "PM Direction Gate G1: design direction must align with user persona.",
+            level="warning",
         )
 
 
 def main() -> int:
     check()
-
-    high_issues = [i for i in ISSUES if i[0] == "high"]
-    warning_issues = [i for i in ISSUES if i[0] == "warning"]
-    info_issues = [i for i in ISSUES if i[0] == "info"]
-
-    print("═══ Design Brief Exit Check (PM Direction Gate G1) ═══")
-    print()
-    for level, code, detail in info_issues:
-        print(f"  ℹ️  [{code}] {detail}")
-    print()
-    for level, code, detail in warning_issues:
-        print(f"  ⚠️  [{code}] {detail}")
-    print()
-    for level, code, detail in high_issues:
-        print(f"  ❌ [{code}] {detail}")
-
-    print()
-    print(
-        f"  Total: {len(high_issues)} high, "
-        f"{len(warning_issues)} warning, {len(info_issues)} info"
-    )
-    print()
-
-    if high_issues:
-        print(
-            "❌ Design Brief exit check FAILED — resolve HIGH issues before proceeding."
-        )
-        return 1
-
-    if warning_issues:
-        print(
-            "⚠️  Design Brief exit check PASSED with warnings — "
-            "PM should review direction alignment."
-        )
-    else:
-        print("✅ Design Brief passes exit check. Direction alignment verified.")
-
-    return 0
+    print_and_exit("Design Brief")
 
 
 if __name__ == "__main__":

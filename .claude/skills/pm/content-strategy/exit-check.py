@@ -9,24 +9,23 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
+
 # Use relative path for PROJECT_ROOT
 PROJECT_ROOT = Path(".")
 
 STATE_DIR = PROJECT_ROOT / ".claude" / "state"
 L0_STRATEGY = STATE_DIR / "L0-strategy.md"
 
-ISSUES = []
-
 
 def check_l0_exists():
     """L0-strategy.md must exist for CG0."""
     if not L0_STRATEGY.exists():
-        ISSUES.append(
-            (
-                "high",
-                "file_missing",
-                "L0-strategy.md does not exist — create content strategy before production",
-            )
+        add_issue(
+            "file_missing",
+            "L0-strategy.md does not exist — create content strategy before production",
+            level="high",
         )
         return False
     return True
@@ -47,8 +46,10 @@ def check_required_sections():
 
     for section, code in required_sections.items():
         if section not in content:
-            ISSUES.append(
-                ("high", code, f"L0-strategy.md missing required section: {section}")
+            add_issue(
+                code,
+                f"L0-strategy.md missing required section: {section}",
+                level="high",
             )
 
 
@@ -73,12 +74,10 @@ def check_target_audience_specificity():
         ]
         for pattern in vague_patterns:
             if re.search(pattern, section, re.IGNORECASE):
-                ISSUES.append(
-                    (
-                        "warning",
-                        "vague_audience",
-                        f"Target audience is too vague — define specific segment (age, interests, pain points)",
-                    )
+                add_issue(
+                    "vague_audience",
+                    "Target audience is too vague — define specific segment (age, interests, pain points)",
+                    level="warning",
                 )
                 break
 
@@ -96,12 +95,10 @@ def check_kpi_quantified():
         # Should contain at least one number (%, views, rate, etc.)
         has_number = bool(re.search(r"\d+", kpi_section))
         if not has_number:
-            ISSUES.append(
-                (
-                    "high",
-                    "kpi_not_quantified",
-                    "KPI section must include at least one quantified metric with a target number",
-                )
+            add_issue(
+                "kpi_not_quantified",
+                "KPI section must include at least one quantified metric with a target number",
+                level="high",
             )
 
 
@@ -114,12 +111,10 @@ def check_differentiation():
 
     if "## Differentiation Strategy" not in content:
         if "## Differentiation" not in content:
-            ISSUES.append(
-                (
-                    "warning",
-                    "diff_missing",
-                    "L0-strategy.md missing Differentiation Strategy — how does this content stand out?",
-                )
+            add_issue(
+                "diff_missing",
+                "L0-strategy.md missing Differentiation Strategy — how does this content stand out?",
+                level="warning",
             )
 
 
@@ -131,12 +126,10 @@ def check_compliance():
     content = L0_STRATEGY.read_text(encoding="utf-8")
 
     if "## Compliance" not in content:
-        ISSUES.append(
-            (
-                "warning",
-                "compliance_missing",
-                "L0-strategy.md missing Compliance Requirements section — add even if 'none'",
-            )
+        add_issue(
+            "compliance_missing",
+            "L0-strategy.md missing Compliance Requirements section — add even if 'none'",
+            level="warning",
         )
 
 
@@ -148,16 +141,7 @@ def main() -> int:
     check_differentiation()
     check_compliance()
 
-    if not ISSUES:
-        print("✅ PM Content Strategy Gate (CG0) exit check passed.")
-        return 0
-
-    print("❌ PM Content Strategy Gate (CG0) exit check FAILED:\n")
-    for level, code, detail in ISSUES:
-        icon = "🔴" if level == "high" else "🟡"
-        print(f"  {icon} [{level.upper()}] {code}: {detail}")
-    print()
-    return 1
+    print_and_exit("PM Content Strategy Gate")
 
 
 if __name__ == "__main__":

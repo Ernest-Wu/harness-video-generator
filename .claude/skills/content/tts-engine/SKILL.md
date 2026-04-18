@@ -1,3 +1,10 @@
+---
+name: tts-engine
+description: 将 scenes.json 中的口播文本转化为音频文件（.mp3）和时间对齐字幕（subtitles.json）。
+intent: 语音合成与字幕生成。通过不可跳过的 Creative Gate (CG2) 完成 TTS 预设选择，逐场景生成音频，输出时间精确对齐的 subtitles.json。
+type: component
+---
+
 # tts-engine — 语音合成与字幕生成
 
 ## Purpose

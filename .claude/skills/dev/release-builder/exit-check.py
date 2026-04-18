@@ -23,10 +23,11 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
+
 STATE_DIR = Path(".claude/state")
 PROJECT_ROOT = Path(".")
-
-ISSUES = []
 
 
 def check():
@@ -46,53 +47,43 @@ def check():
             p0_text = p0_section.group(0)
             p0_items = re.findall(r"^[-*]\s+\*\*.+?\*\*", p0_text, re.MULTILINE)
             if p0_items:
-                ISSUES.append(
-                    (
-                        "info",
-                        "p0_features_listed",
-                        f"Found {len(p0_items)} P0 features in spec. "
-                        f"Verify all are implemented before release.",
-                    )
+                add_issue(
+                    "p0_features_listed",
+                    f"Found {len(p0_items)} P0 features in spec. "
+                    f"Verify all are implemented before release.",
+                    level="info",
                 )
             else:
-                ISSUES.append(
-                    (
-                        "info",
-                        "p0_section_exists",
-                        "P0 section found in spec but no specific features listed.",
-                    )
+                add_issue(
+                    "p0_section_exists",
+                    "P0 section found in spec but no specific features listed.",
+                    level="info",
                 )
         else:
             has_priority = re.search(
                 r"P[0-2]|Must\s+Have|优先级|priority", spec_content, re.IGNORECASE
             )
             if not has_priority:
-                ISSUES.append(
-                    (
-                        "warning",
-                        "no_priority_markers",
-                        "No P0/P1/P2 or priority markers found in spec. "
-                        "Cannot verify which features must be in this release.",
-                    )
+                add_issue(
+                    "no_priority_markers",
+                    "No P0/P1/P2 or priority markers found in spec. "
+                    "Cannot verify which features must be in this release.",
+                    level="warning",
                 )
 
         if len(spec_content.strip()) < 200:
-            ISSUES.append(
-                (
-                    "high",
-                    "spec_too_short",
-                    f"L2-spec.md is only {len(spec_content.strip())} chars. "
-                    f"Cannot verify feature coverage without a meaningful spec.",
-                )
+            add_issue(
+                "spec_too_short",
+                f"L2-spec.md is only {len(spec_content.strip())} chars. "
+                f"Cannot verify feature coverage without a meaningful spec.",
+                level="high",
             )
     else:
-        ISSUES.append(
-            (
-                "high",
-                "spec_missing",
-                f"L2-spec.md not found at {l2_spec}. "
-                f"Release gate requires a spec to verify feature coverage.",
-            )
+        add_issue(
+            "spec_missing",
+            f"L2-spec.md not found at {l2_spec}. "
+            f"Release gate requires a spec to verify feature coverage.",
+            level="high",
         )
 
     # ──────────────────────────────────────────
@@ -106,34 +97,28 @@ def check():
         rollback_content = rollback_doc.read_text(encoding="utf-8")
         if len(rollback_content.strip()) > 50:
             found_rollback = True
-            ISSUES.append(
-                (
-                    "info",
-                    "rollback_plan_found",
-                    "ROLLBACK.md exists at project root.",
-                )
+            add_issue(
+                "rollback_plan_found",
+                "ROLLBACK.md exists at project root.",
+                level="info",
             )
 
     if not found_rollback and l4_plan.exists():
         plan_content = l4_plan.read_text(encoding="utf-8")
         if re.search(r"rollback|回滚|revert|回退", plan_content, re.IGNORECASE):
             found_rollback = True
-            ISSUES.append(
-                (
-                    "info",
-                    "rollback_in_plan",
-                    "Rollback plan found in L4-plan.md.",
-                )
+            add_issue(
+                "rollback_in_plan",
+                "Rollback plan found in L4-plan.md.",
+                level="info",
             )
 
     if not found_rollback:
-        ISSUES.append(
-            (
-                "high",
-                "no_rollback_plan",
-                "No rollback plan found. Create ROLLBACK.md at project root "
-                "or add a rollback section to L4-plan.md before releasing.",
-            )
+        add_issue(
+            "no_rollback_plan",
+            "No rollback plan found. Create ROLLBACK.md at project root "
+            "or add a rollback section to L4-plan.md before releasing.",
+            level="high",
         )
 
     # ──────────────────────────────────────────
@@ -148,29 +133,23 @@ def check():
             re.IGNORECASE,
         )
         if incomplete:
-            ISSUES.append(
-                (
-                    "warning",
-                    "incomplete_tasks",
-                    f"Found {len(incomplete)} incomplete task(s) in task-history.yaml. "
-                    f"Verify these are not blocking the release.",
-                )
+            add_issue(
+                "incomplete_tasks",
+                f"Found {len(incomplete)} incomplete task(s) in task-history.yaml. "
+                f"Verify these are not blocking the release.",
+                level="warning",
             )
         else:
-            ISSUES.append(
-                (
-                    "info",
-                    "task_history_exists",
-                    "Task history found.",
-                )
+            add_issue(
+                "task_history_exists",
+                "Task history found.",
+                level="info",
             )
     else:
-        ISSUES.append(
-            (
-                "warning",
-                "no_task_history",
-                "task-history.yaml not found — cannot verify all tasks completed.",
-            )
+        add_issue(
+            "no_task_history",
+            "task-history.yaml not found — cannot verify all tasks completed.",
+            level="warning",
         )
 
     # ──────────────────────────────────────────
@@ -178,24 +157,20 @@ def check():
     # ──────────────────────────────────────────
     l3_design = STATE_DIR / "L3-design.md"
     if not l3_design.exists():
-        ISSUES.append(
-            (
-                "warning",
-                "no_design_brief",
-                "L3-design.md not found. If this release includes UI changes, "
-                "a design brief is required for spec compliance.",
-            )
+        add_issue(
+            "no_design_brief",
+            "L3-design.md not found. If this release includes UI changes, "
+            "a design brief is required for spec compliance.",
+            level="warning",
         )
     else:
         design_content = l3_design.read_text(encoding="utf-8")
         if len(design_content.strip()) < 100:
-            ISSUES.append(
-                (
-                    "warning",
-                    "design_brief_too_short",
-                    "L3-design.md exists but is nearly empty. "
-                    "UI changes require a design brief.",
-                )
+            add_issue(
+                "design_brief_too_short",
+                "L3-design.md exists but is nearly empty. "
+                "UI changes require a design brief.",
+                level="warning",
             )
 
     # ──────────────────────────────────────────
@@ -207,87 +182,44 @@ def check():
             r"^##\s+(?:Phase|阶段)", plan_content, re.MULTILINE | re.IGNORECASE
         )
         if phases:
-            ISSUES.append(
-                (
-                    "info",
-                    "plan_has_phases",
-                    f"Found {len(phases)} phase(s) in dev plan.",
-                )
+            add_issue(
+                "plan_has_phases",
+                f"Found {len(phases)} phase(s) in dev plan.",
+                level="info",
             )
         else:
-            ISSUES.append(
-                (
-                    "warning",
-                    "plan_no_phases",
-                    "L4-plan.md exists but no phases found. "
-                    "Verify that the plan structure is correct.",
-                )
+            add_issue(
+                "plan_no_phases",
+                "L4-plan.md exists but no phases found. "
+                "Verify that the plan structure is correct.",
+                level="warning",
             )
     else:
-        ISSUES.append(
-            (
-                "warning",
-                "no_dev_plan",
-                "L4-plan.md not found. Cannot verify phase completion.",
-            )
+        add_issue(
+            "no_dev_plan",
+            "L4-plan.md not found. Cannot verify phase completion.",
+            level="warning",
         )
 
     # ── 6. Release Notes ─────────────────────────────────────────────
     release_notes = PROJECT_ROOT / "RELEASE-NOTES.md"
     if release_notes.exists():
-        ISSUES.append(
-            (
-                "info",
-                "release_notes_found",
-                "RELEASE-NOTES.md exists.",
-            )
+        add_issue(
+            "release_notes_found",
+            "RELEASE-NOTES.md exists.",
+            level="info",
         )
     else:
-        ISSUES.append(
-            (
-                "warning",
-                "no_release_notes",
-                "No RELEASE-NOTES.md found. Document what changed in this release.",
-            )
+        add_issue(
+            "no_release_notes",
+            "No RELEASE-NOTES.md found. Document what changed in this release.",
+            level="warning",
         )
 
 
 def main() -> int:
     check()
-
-    high_issues = [i for i in ISSUES if i[0] == "high"]
-    warning_issues = [i for i in ISSUES if i[0] == "warning"]
-    info_issues = [i for i in ISSUES if i[0] == "info"]
-
-    # Summary
-    print("═══ PM Release Gate (G4) ═══")
-    print()
-    for level, code, detail in info_issues:
-        print(f"  ℹ️  [{code}] {detail}")
-    print()
-    for level, code, detail in warning_issues:
-        print(f"  ⚠️  [{code}] {detail}")
-    print()
-    for level, code, detail in high_issues:
-        print(f"  ❌ [{code}] {detail}")
-
-    print()
-    print(
-        f"  Total: {len(high_issues)} high, {len(warning_issues)} warning, {len(info_issues)} info"
-    )
-    print()
-
-    # Hard Gate: any HIGH issue blocks release
-    if high_issues:
-        print("❌ Release Gate FAILED — resolve HIGH issues before proceeding.")
-        return 1
-
-    if warning_issues:
-        print("⚠️  Release Gate PASSED with warnings — PM should review before release.")
-    else:
-        print("✅ Release Gate PASSED — ready for PM sign-off (Creative Gate).")
-
-    return 0
+    print_and_exit("PM Release Gate")
 
 
 if __name__ == "__main__":

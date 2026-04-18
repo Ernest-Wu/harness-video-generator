@@ -15,21 +15,20 @@ import re
 import sys
 from pathlib import Path
 
-REPORT_PATH = Path(".claude/state/LAST_BUGFIX.md")
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
 
-ISSUES = []
+REPORT_PATH = Path(".claude/state/LAST_BUGFIX.md")
 
 
 def check():
     # ── HARD GATE: LAST_BUGFIX.md must exist ──
     if not REPORT_PATH.exists():
-        ISSUES.append(
-            (
-                "high",
-                "fix_report_missing",
-                f"{REPORT_PATH} does not exist. "
-                "bug-fixer must document the fix before marking complete.",
-            )
+        add_issue(
+            "fix_report_missing",
+            f"{REPORT_PATH} does not exist. "
+            "bug-fixer must document the fix before marking complete.",
+            level="high",
         )
         return
 
@@ -44,33 +43,27 @@ def check():
 
     evidence_count = sum([has_hypothesis, has_evidence, has_root_cause])
     if evidence_count == 0:
-        ISSUES.append(
-            (
-                "high",
-                "fix_report_weak",
-                "Bug fix report lacks hypothesis, evidence, or root cause. "
-                "Must include at least one structured debugging element.",
-            )
+        add_issue(
+            "fix_report_weak",
+            "Bug fix report lacks hypothesis, evidence, or root cause. "
+            "Must include at least one structured debugging element.",
+            level="high",
         )
     elif evidence_count == 1:
-        ISSUES.append(
-            (
-                "warning",
-                "fix_report_partial",
-                "Bug fix report has only one debugging element. "
-                "Best practice: include hypothesis, evidence, AND root cause.",
-            )
+        add_issue(
+            "fix_report_partial",
+            "Bug fix report has only one debugging element. "
+            "Best practice: include hypothesis, evidence, AND root cause.",
+            level="warning",
         )
 
     # ── HARD GATE: Minimum report length ──
     if len(text.strip()) < 100:
-        ISSUES.append(
-            (
-                "high",
-                "fix_report_too_short",
-                f"Bug fix report is only {len(text.strip())} chars. "
-                "A meaningful fix report needs at least 100 chars.",
-            )
+        add_issue(
+            "fix_report_too_short",
+            f"Bug fix report is only {len(text.strip())} chars. "
+            "A meaningful fix report needs at least 100 chars.",
+            level="high",
         )
 
     # ── WARNING: Check for escalation pattern (3+ attempts) ──
@@ -78,13 +71,11 @@ def check():
         r"(?:attempt|try|attempt|尝试|第\s*\d+\s*次)", text, re.IGNORECASE
     )
     if len(attempt_markers) >= 3:
-        ISSUES.append(
-            (
-                "warning",
-                "escalation_needed",
-                f"Bug fix has {len(attempt_markers)}+ attempt markers. "
-                "Consider architectural review per SKILL.md Pitfall 3.",
-            )
+        add_issue(
+            "escalation_needed",
+            f"Bug fix has {len(attempt_markers)}+ attempt markers. "
+            "Consider architectural review per SKILL.md Pitfall 3.",
+            level="warning",
         )
 
     # ── INFO: Check for test verification ──
@@ -94,13 +85,11 @@ def check():
         )
     )
     if not has_test_verification:
-        ISSUES.append(
-            (
-                "info",
-                "no_test_verification",
-                "Bug fix report does not mention test verification. "
-                "SKILL.md Stage 4 requires running failing test + full test suite.",
-            )
+        add_issue(
+            "no_test_verification",
+            "Bug fix report does not mention test verification. "
+            "SKILL.md Stage 4 requires running failing test + full test suite.",
+            level="info",
         )
 
     # ── INFO: Check for business impact ──
@@ -112,54 +101,17 @@ def check():
         )
     )
     if not has_impact:
-        ISSUES.append(
-            (
-                "info",
-                "no_business_impact",
-                "Bug fix report does not mention business/user impact. "
-                "PM Gate: bug priority should map to business impact (MoSCoW).",
-            )
+        add_issue(
+            "no_business_impact",
+            "Bug fix report does not mention business/user impact. "
+            "PM Gate: bug priority should map to business impact (MoSCoW).",
+            level="info",
         )
 
 
 def main() -> int:
     check()
-
-    high_issues = [i for i in ISSUES if i[0] == "high"]
-    warning_issues = [i for i in ISSUES if i[0] == "warning"]
-    info_issues = [i for i in ISSUES if i[0] == "info"]
-
-    print("═══ Bug Fixer Exit Check ═══")
-    print()
-    for level, code, detail in info_issues:
-        print(f"  ℹ️  [{code}] {detail}")
-    print()
-    for level, code, detail in warning_issues:
-        print(f"  ⚠️  [{code}] {detail}")
-    print()
-    for level, code, detail in high_issues:
-        print(f"  ❌ [{code}] {detail}")
-
-    print()
-    print(
-        f"  Total: {len(high_issues)} high, "
-        f"{len(warning_issues)} warning, {len(info_issues)} info"
-    )
-    print()
-
-    if high_issues:
-        print("❌ Bug fixer exit check FAILED — resolve HIGH issues before proceeding.")
-        return 1
-
-    if warning_issues:
-        print(
-            "⚠️  Bug fixer exit check PASSED with warnings — "
-            "PM should review before proceeding."
-        )
-    else:
-        print("✅ Bug fixer exit check passed. Fix is documented and verified.")
-
-    return 0
+    print_and_exit("Bug Fixer")
 
 
 if __name__ == "__main__":

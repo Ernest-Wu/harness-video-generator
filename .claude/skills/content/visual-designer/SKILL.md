@@ -1,3 +1,10 @@
+---
+name: visual-designer
+description: 将 scenes.json 转化为视觉风格化的 HTML 幻灯片预览。编排器角色，委托 frontend-slides 执行 HTML 生成。
+intent: 负责场景→幻灯片映射、图片生成/管理、平台 CSS 覆盖注入、visual beats 属性嵌入，并通过 Creative Gate 完成 Mood + Style 预览确认。
+type: interactive
+---
+
 # visual-designer — 视觉设计与HTML幻灯片编排
 
 ## Purpose

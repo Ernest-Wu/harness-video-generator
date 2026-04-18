@@ -1,3 +1,10 @@
+---
+name: video-compositor
+description: 将幻灯片、音频、字幕合成为最终 MP4 视频。使用 Remotion 渲染引擎。
+intent: 使用 Remotion 将 HTML 幻灯片渲染为视频帧，通过 ffmpeg 叠加 TTS 音频和字幕，产出最终视频。包含 ffprobe 校验和 Creative Gate 最终确认。
+type: component
+---
+
 # video-compositor — 视频合成与输出
 
 ## Purpose

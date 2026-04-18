@@ -8,6 +8,9 @@ Runs at 7-day and 30-day checkpoints after release.
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
+
 # Use relative path for PROJECT_ROOT
 PROJECT_ROOT = Path(".")
 
@@ -16,18 +19,14 @@ L2_SPEC = STATE_DIR / "L2-spec.md"
 L4_PLAN = STATE_DIR / "L4-plan.md"
 L5_VALIDATION = STATE_DIR / "L5-validation.md"
 
-ISSUES = []
-
 
 def check_l5_exists():
     """L5-validation.md must exist for G5."""
     if not L5_VALIDATION.exists():
-        ISSUES.append(
-            (
-                "high",
-                "file_missing",
-                "L5-validation.md does not exist — create it before G5 validation",
-            )
+        add_issue(
+            "file_missing",
+            "L5-validation.md does not exist — create it before G5 validation",
+            level="high",
         )
         return False
     return True
@@ -49,12 +48,10 @@ def check_validation_report_structure():
 
     for section in required_sections:
         if section not in content:
-            ISSUES.append(
-                (
-                    "high",
-                    "section_missing",
-                    f"L5-validation.md missing required section: {section}",
-                )
+            add_issue(
+                "section_missing",
+                f"L5-validation.md missing required section: {section}",
+                level="high",
             )
 
 
@@ -75,12 +72,10 @@ def check_metrics_have_status():
         # Should have at least one status indicator
         has_status = any(marker in metrics_section for marker in ["✅", "⚠️", "❌"])
         if not has_status and len(metrics_section.strip()) > 10:
-            ISSUES.append(
-                (
-                    "warning",
-                    "metrics_no_status",
-                    "Metrics section has no status indicators (✅/⚠️/❌)",
-                )
+            add_issue(
+                "metrics_no_status",
+                "Metrics section has no status indicators (✅/⚠️/❌)",
+                level="warning",
             )
 
 
@@ -99,12 +94,10 @@ def check_decision_made():
         )
         has_decision = any(kw in decision_section for kw in ["GO", "PIVOT", "KILL"])
         if not has_decision:
-            ISSUES.append(
-                (
-                    "high",
-                    "decision_missing",
-                    "Decision section must contain GO, PIVOT, or KILL",
-                )
+            add_issue(
+                "decision_missing",
+                "Decision section must contain GO, PIVOT, or KILL",
+                level="high",
             )
 
 
@@ -118,12 +111,10 @@ def check_spec_alignment():
 
     # L2-spec should have a Success Metrics section
     if "## Success Metrics" not in l2_content:
-        ISSUES.append(
-            (
-                "warning",
-                "l2_no_metrics",
-                "L2-spec has no Success Metrics section — G0 may be incomplete",
-            )
+        add_issue(
+            "l2_no_metrics",
+            "L2-spec has no Success Metrics section — G0 may be incomplete",
+            level="warning",
         )
 
     # L5 should reference L2 metrics or have its own metrics table
@@ -131,12 +122,10 @@ def check_spec_alignment():
         metrics_section = l5_content.split("## Metrics")[1].split("##")[0]
         # Should have a table with columns
         if "|" not in metrics_section:
-            ISSUES.append(
-                (
-                    "warning",
-                    "metrics_format",
-                    "Metrics section should use a table format with columns for baseline, current, target, status",
-                )
+            add_issue(
+                "metrics_format",
+                "Metrics section should use a table format with columns for baseline, current, target, status",
+                level="warning",
             )
 
 
@@ -154,12 +143,10 @@ def check_pivot_has_plan():
             else ""
         )
         if "PIVOT" in decision_section and "## PIVOT Plan" not in content:
-            ISSUES.append(
-                (
-                    "high",
-                    "pivot_no_plan",
-                    "Decision is PIVOT but no PIVOT Plan section found",
-                )
+            add_issue(
+                "pivot_no_plan",
+                "Decision is PIVOT but no PIVOT Plan section found",
+                level="high",
             )
 
 
@@ -171,16 +158,7 @@ def main() -> int:
     check_spec_alignment()
     check_pivot_has_plan()
 
-    if not ISSUES:
-        print("✅ PM Validation Gate (G5) exit check passed.")
-        return 0
-
-    print("❌ PM Validation Gate (G5) exit check FAILED:\n")
-    for level, code, detail in ISSUES:
-        icon = "🔴" if level == "high" else "🟡"
-        print(f"  {icon} [{level.upper()}] {code}: {detail}")
-    print()
-    return 1
+    print_and_exit("PM Validation Gate")
 
 
 if __name__ == "__main__":

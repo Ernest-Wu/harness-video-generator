@@ -9,6 +9,10 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
 
 SCENES_PATH = Path("scenes.json")
 SPEC_PATH = Path(".claude/state/L2-spec.md")
@@ -24,8 +28,6 @@ RESOLUTIONS = {
 
 MIN_FPS = 24
 
-ISSUES = []
-
 
 def get_platform() -> str:
     """Extract platform from L2-spec.md."""
@@ -39,7 +41,7 @@ def get_platform() -> str:
     return "16:9"
 
 
-def get_video_info(video_path: Path) -> dict | None:
+def get_video_info(video_path: Path) -> Optional[dict]:
     """Use ffprobe to get video info."""
     try:
         result = subprocess.run(
@@ -67,12 +69,10 @@ def get_video_info(video_path: Path) -> dict | None:
 def check():
     # 0. Check ffprobe availability
     if not shutil.which("ffprobe"):
-        ISSUES.append(
-            (
-                "ffprobe_missing",
-                "ffprobe is not installed or not in PATH. Video validation requires ffmpeg/ffprobe. "
-                "Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux).",
-            )
+        add_issue(
+            "ffprobe_missing",
+            "ffprobe is not installed or not in PATH. Video validation requires ffmpeg/ffprobe. "
+            "Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux).",
         )
 
     platform = get_platform()
@@ -80,20 +80,16 @@ def check():
 
     # 1. Base video must exist
     if not BASE_VIDEO_PATH.exists():
-        ISSUES.append(
-            (
-                "base_video_missing",
-                f"{BASE_VIDEO_PATH} does not exist. Remotion must produce a base video first.",
-            )
+        add_issue(
+            "base_video_missing",
+            f"{BASE_VIDEO_PATH} does not exist. Remotion must produce a base video first.",
         )
     else:
         info = get_video_info(BASE_VIDEO_PATH)
         if info is None:
-            ISSUES.append(
-                (
-                    "base_video_unreadable",
-                    f"Cannot read {BASE_VIDEO_PATH} with ffprobe. Ensure ffmpeg/ffprobe is installed and the file is a valid video.",
-                )
+            add_issue(
+                "base_video_unreadable",
+                f"Cannot read {BASE_VIDEO_PATH} with ffprobe. Ensure ffmpeg/ffprobe is installed and the file is a valid video.",
             )
         else:
             # Check resolution
@@ -104,11 +100,9 @@ def check():
                 width = int(video_stream.get("width", 0))
                 height = int(video_stream.get("height", 0))
                 if width != expected_width or height != expected_height:
-                    ISSUES.append(
-                        (
-                            "resolution_mismatch",
-                            f"Base video resolution {width}x{height} doesn't match platform {platform} ({expected_width}x{expected_height}).",
-                        )
+                    add_issue(
+                        "resolution_mismatch",
+                        f"Base video resolution {width}x{height} doesn't match platform {platform} ({expected_width}x{expected_height}).",
                     )
 
                 # Check fps
@@ -119,36 +113,28 @@ def check():
                 else:
                     fps = float(fps_str)
                 if fps < MIN_FPS:
-                    ISSUES.append(
-                        (
-                            "fps_too_low",
-                            f"Base video fps ({fps:.1f}) is below minimum {MIN_FPS}.",
-                        )
+                    add_issue(
+                        "fps_too_low",
+                        f"Base video fps ({fps:.1f}) is below minimum {MIN_FPS}.",
                     )
             except (StopIteration, ValueError, KeyError):
-                ISSUES.append(
-                    (
-                        "base_video_no_stream",
-                        f"Cannot find video stream in {BASE_VIDEO_PATH}.",
-                    )
+                add_issue(
+                    "base_video_no_stream",
+                    f"Cannot find video stream in {BASE_VIDEO_PATH}.",
                 )
 
     # 2. Final video must exist
     if not FINAL_VIDEO_PATH.exists():
-        ISSUES.append(
-            (
-                "final_video_missing",
-                f"{FINAL_VIDEO_PATH} does not exist. Video composition must produce the final video.",
-            )
+        add_issue(
+            "final_video_missing",
+            f"{FINAL_VIDEO_PATH} does not exist. Video composition must produce the final video.",
         )
     else:
         info = get_video_info(FINAL_VIDEO_PATH)
         if info is None:
-            ISSUES.append(
-                (
-                    "final_video_unreadable",
-                    f"Cannot read {FINAL_VIDEO_PATH} with ffprobe.",
-                )
+            add_issue(
+                "final_video_unreadable",
+                f"Cannot read {FINAL_VIDEO_PATH} with ffprobe.",
             )
         else:
             # Check fps for final video too
@@ -163,18 +149,14 @@ def check():
                 else:
                     fps = float(fps_str)
                 if fps < MIN_FPS:
-                    ISSUES.append(
-                        (
-                            "final_fps_too_low",
-                            f"Final video fps ({fps:.1f}) is below minimum {MIN_FPS}.",
-                        )
+                    add_issue(
+                        "final_fps_too_low",
+                        f"Final video fps ({fps:.1f}) is below minimum {MIN_FPS}.",
                     )
             except (StopIteration, ValueError, KeyError):
-                ISSUES.append(
-                    (
-                        "final_video_no_stream",
-                        f"Cannot find video stream in {FINAL_VIDEO_PATH}.",
-                    )
+                add_issue(
+                    "final_video_no_stream",
+                    f"Cannot find video stream in {FINAL_VIDEO_PATH}.",
                 )
 
     # 3. Duration sanity check (if we have both scenes and video)
@@ -198,12 +180,10 @@ def check():
                         if duration > 0:
                             ratio = duration / estimated_total
                             if ratio < 0.95 or ratio > 1.05:
-                                ISSUES.append(
-                                    (
-                                        "duration_mismatch",
-                                        f"Video duration ({duration:.1f}s) is {ratio:.0%} of estimated ({estimated_total}s). "
-                                        f"Expected within 95%-105%.",
-                                    )
+                                add_issue(
+                                    "duration_mismatch",
+                                    f"Video duration ({duration:.1f}s) is {ratio:.0%} of estimated ({estimated_total}s). "
+                                    f"Expected within 95%-105%.",
                                 )
                     except (ValueError, KeyError):
                         pass
@@ -213,17 +193,7 @@ def check():
 
 def main() -> int:
     check()
-    if not ISSUES:
-        print(
-            "✅ video-compositor exit check passed. Video output is valid and meets quality standards."
-        )
-        return 0
-
-    print("❌ video-compositor exit check failed:\n")
-    for code, detail in ISSUES:
-        print(f"  [{code}] {detail}")
-    print()
-    return 1
+    print_and_exit("video-compositor")
 
 
 if __name__ == "__main__":

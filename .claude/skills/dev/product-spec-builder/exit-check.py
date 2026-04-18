@@ -7,6 +7,10 @@ Deterministic compliance checker for Product Spec outputs.
 import re
 import sys
 from pathlib import Path
+from typing import Optional
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from _utils.exit_check_base import add_issue, print_and_exit
 
 SPEC_PATH = Path(".claude/state/L2-spec.md")
 
@@ -24,12 +28,10 @@ QUANTIFIER_RE = re.compile(
     re.IGNORECASE,
 )
 
-ISSUES = []
-
 
 def check():
     if not SPEC_PATH.exists():
-        ISSUES.append(("high", "file_missing", f"{SPEC_PATH} does not exist."))
+        add_issue("file_missing", f"{SPEC_PATH} does not exist.", level="high")
         return
 
     text = SPEC_PATH.read_text(encoding="utf-8")
@@ -40,13 +42,11 @@ def check():
         if not any(
             re.search(rf"^##\s+.*{pattern}.*$", line, re.IGNORECASE) for line in lines
         ):
-            ISSUES.append(
-                (
-                    "high",
-                    f"section_missing:{code}",
-                    f"Missing required section matching: {pattern}. "
-                    f"Downstream Agents will have no execution baseline.",
-                )
+            add_issue(
+                f"section_missing:{code}",
+                f"Missing required section matching: {pattern}. "
+                f"Downstream Agents will have no execution baseline.",
+                level="high",
             )
 
     # 2. Metrics must be quantified
@@ -54,13 +54,11 @@ def check():
         text, r"Success\s+Metrics|成功指标|验收标准|Metrics"
     )
     if metrics_section and not QUANTIFIER_RE.search(metrics_section):
-        ISSUES.append(
-            (
-                "high",
-                "metrics_not_quantified",
-                "Success Metrics contains no numbers, percentages, or time units. "
-                "'Improve productivity' is not a metric. 'Increase weekly output from 2000 to 2500 words within 30 days' is.",
-            )
+        add_issue(
+            "metrics_not_quantified",
+            "Success Metrics contains no numbers, percentages, or time units. "
+            "'Improve productivity' is not a metric. 'Increase weekly output from 2000 to 2500 words within 30 days' is.",
+            level="high",
         )
 
     # 3. Scope must have Out-of-Scope
@@ -71,23 +69,19 @@ def check():
             scope_section,
             re.IGNORECASE,
         ):
-            ISSUES.append(
-                (
-                    "high",
-                    "scope_boundary_missing",
-                    "No explicit Out-of-Scope found. Scope creep is guaranteed.",
-                )
+            add_issue(
+                "scope_boundary_missing",
+                "No explicit Out-of-Scope found. Scope creep is guaranteed.",
+                level="high",
             )
 
     # 4. Length check
     body = text.split("---", 2)[-1] if text.startswith("---") else text
     if len(body.strip()) < 400:
-        ISSUES.append(
-            (
-                "high",
-                "spec_too_short",
-                f"Body is only {len(body.strip())} chars. A usable spec needs at least 400 chars to constrain downstream Agents.",
-            )
+        add_issue(
+            "spec_too_short",
+            f"Body is only {len(body.strip())} chars. A usable spec needs at least 400 chars to constrain downstream Agents.",
+            level="high",
         )
 
     # 5. Must not be marketing fluff
@@ -101,12 +95,10 @@ def check():
     ]
     found_fluff = [w for w in fluff_words if w.lower() in body.lower()]
     if found_fluff:
-        ISSUES.append(
-            (
-                "warning",
-                "marketing_fluff_detected",
-                f"Spec contains buzzwords: {', '.join(found_fluff)}. This is an execution contract, not a pitch deck.",
-            )
+        add_issue(
+            "marketing_fluff_detected",
+            f"Spec contains buzzwords: {', '.join(found_fluff)}. This is an execution contract, not a pitch deck.",
+            level="warning",
         )
 
     # ── PM Decision Quality Checks (warning level) ─────────────
@@ -114,37 +106,32 @@ def check():
 
 
 def check_decision_quality(spec_content):
-    warnings = []
-
     if not re.search(
         r"P[0-2]|优先级|priority|MVP|Must Have", spec_content, re.IGNORECASE
     ):
-        warnings.append(
-            (
-                "features_not_prioritized",
-                "Core Features lack priority ranking (P0/P1/P2 or Must/Should/Nice). "
-                "Without prioritization, downstream Agents cannot distinguish MVP from nice-to-have.",
-            )
+        add_issue(
+            "features_not_prioritized",
+            "Core Features lack priority ranking (P0/P1/P2 or Must/Should/Nice). "
+            "Without prioritization, downstream Agents cannot distinguish MVP from nice-to-have.",
+            level="warning",
         )
 
     if not re.search(r"假设|assumption|hypothesis", spec_content, re.IGNORECASE):
-        warnings.append(
-            (
-                "no_stated_assumptions",
-                "Spec has no stated assumptions. Consider using discovery-interview-prep "
-                "to validate key assumptions before committing to implementation.",
-            )
+        add_issue(
+            "no_stated_assumptions",
+            "Spec has no stated assumptions. Consider using discovery-interview-prep "
+            "to validate key assumptions before committing to implementation.",
+            level="warning",
         )
 
     if not re.search(
         r"MVP|最小可行|v1|phase.?0|Must Have", spec_content, re.IGNORECASE
     ):
-        warnings.append(
-            (
-                "no_mvp_boundary",
-                "No MVP boundary defined. Which features must ship in Phase 0? "
-                "Without this, scope creep is guaranteed.",
-            )
+        add_issue(
+            "no_mvp_boundary",
+            "No MVP boundary defined. Which features must ship in Phase 0? "
+            "Without this, scope creep is guaranteed.",
+            level="warning",
         )
 
     if not re.search(
@@ -152,20 +139,15 @@ def check_decision_quality(spec_content):
         spec_content,
         re.IGNORECASE,
     ):
-        warnings.append(
-            (
-                "no_business_goal",
-                "Spec lacks a Business Goal link. Success Metrics should tie to company strategy, "
-                "not just product-level numbers.",
-            )
+        add_issue(
+            "no_business_goal",
+            "Spec lacks a Business Goal link. Success Metrics should tie to company strategy, "
+            "not just product-level numbers.",
+            level="warning",
         )
 
-    # Warnings don't block, but they surface PM decision gaps
-    for code, detail in warnings:
-        ISSUES.append(("warning", code, detail))
 
-
-def extract_section(text: str, pattern: str) -> str | None:
+def extract_section(text: str, pattern: str) -> Optional[str]:
     non_capturing = re.sub(r"\((?!\?)", "(?:", pattern)
     regex = re.compile(
         rf"^##\s+.*{non_capturing}.*$\n?(.*?)(?=^##\s|\Z)",
@@ -177,55 +159,7 @@ def extract_section(text: str, pattern: str) -> str | None:
 
 def main() -> int:
     check()
-
-    high_issues = [i for i in ISSUES if i[0] == "high"]
-    warning_issues = [i for i in ISSUES if i[0] == "warning"]
-    info_issues = [i for i in ISSUES if i[0] == "info"]
-    legacy_issues = [
-        i
-        for i in ISSUES
-        if isinstance(i[0], str) and i[0] not in ("high", "warning", "info")
-    ]
-
-    print("═══ Product Spec Exit Check (PM Discovery Gate G0) ═══")
-    print()
-    for level, code, detail in info_issues:
-        print(f"  ℹ️  [{code}] {detail}")
-    print()
-    for level, code, detail in warning_issues:
-        print(f"  ⚠️  [{code}] {detail}")
-    print()
-    for code, detail in legacy_issues:
-        print(f"  ❌ [{code}] {detail}")
-    for level, code, detail in high_issues:
-        print(f"  ❌ [{code}] {detail}")
-
-    print()
-    blocking = high_issues + legacy_issues
-    total_info = len(info_issues)
-    total_warning = len(warning_issues)
-    total_blocking = len(blocking)
-    print(
-        f"  Total: {total_blocking} blocking, {total_warning} warning, {total_info} info"
-    )
-    print()
-
-    if blocking:
-        print(
-            "❌ Product Spec exit check FAILED — "
-            "resolve blocking issues before proceeding."
-        )
-        return 1
-
-    if warning_issues:
-        print(
-            "⚠️  Product Spec exit check PASSED with warnings — "
-            "PM should review decision quality."
-        )
-    else:
-        print("✅ Product Spec passes exit check. Decision-ready baseline.")
-
-    return 0
+    print_and_exit("Product Spec")
 
 
 if __name__ == "__main__":
