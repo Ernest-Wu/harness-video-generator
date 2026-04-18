@@ -174,7 +174,9 @@ python3 .claude/skills/content/script-writer/exit-check.py
    - 可说、可念、像真人在讲
    - 保留观点锋芒，保留活人感
    - 按默认结构组织：Hook → Core claim → Reasoning beats → Turn/Contrast → Closing line
-3. **输出 `draft-script.md`**
+3. **输出 `draft-script.md`**（放在项目根目录，与 `scenes.json` 同级）
+
+> 注意：`draft-script.md` 为临时中间产物，场景拆分完成后由 `scenes.json` 和 `L2-spec.md` 取代其角色。但 exit-check 会验证其存在性，确保 Entry B 的研究生成步骤确实执行过。
 
 #### 汇合到入口 A
 
