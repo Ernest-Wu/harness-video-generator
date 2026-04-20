@@ -274,19 +274,19 @@ def check_multi_track_consistency():
 
 ## 八、优先级排序
 
-| 优先级 | 方向 | 预估工作量 | 影响范围 | 推荐里程碑 |
-|--------|------|-----------|---------|-----------|
-| **P0** | 1.1 exit-check 代码质量标准化 | 2h | 17 个 exit-check | M5 |
-| **P0** | 1.3 check-harness.py 深度检查 | 3h | check-harness.py | M5 |
-| **P1** | 2.1 Creative Gate 记录验证 | 2h | 4-5 个 exit-check | M6 |
-| **P1** | 3.1 feedback-analyzer.py | 2h | hooks/, feedback/ | M6 |
-| **P1** | 4.1 L0→L2→L4 追溯验证 | 2h | dev-planner, product-spec-builder | M6 |
-| **P2** | 1.2 exit-check 单元测试 | 6h | 新增 tests/ 目录 | M7 |
-| **P2** | 2.2 Task Package 生成器 | 4h | 新增 package-task.py | M7 |
-| **P2** | 2.3 进度仪表盘 | 4h | 新增 status-board.py | M7 |
-| **P3** | 5.1 动态发现 | 2h | check-harness.py, router.py | M8 |
-| **P3** | 3.2 Steering Loop 端到端测试 | 3h | 新增 test-steering-loop.sh | M8 |
-| **P3** | 4.2 双轨冲突检测 | 1h | check-harness.py | M8 |
+| 优先级 | 方向 | 预估工作量 | 影响范围 | 推荐里程碑 | 状态 |
+|--------|------|-----------|---------|-----------|------|
+| **P0** | 1.1 exit-check 代码质量标准化 | 2h | 17 个 exit-check | M5 | ✅ 已完成 |
+| **P0** | 1.3 check-harness.py 深度检查 | 3h | check-harness.py | M5 | ✅ 已完成 |
+| **P1** | 2.1 Creative Gate 记录验证 | 2h | 4-5 个 exit-check | M6 | ✅ 已完成 |
+| **P1** | 3.1 feedback-analyzer.py | 2h | hooks/, feedback/ | M6 | ✅ 已完成 |
+| **P1** | 4.1 L0→L2→L4 追溯验证 | 2h | dev-planner, product-spec-builder | M6 | ✅ 已完成 |
+| **P2** | 1.2 exit-check 单元测试 | 6h | 新增 tests/ 目录 | M7 | ⬜ 待实施 |
+| **P2** | 2.2 Task Package 生成器 | 4h | 新增 package-task.py | M7 | ⬜ 待实施 |
+| **P2** | 2.3 进度仪表盘 | 4h | 新增 status-board.py | M7 | ⬜ 待实施 |
+| **P3** | 5.1 动态发现 | 2h | check-harness.py, router.py | M8 | ⬜ 待实施 |
+| **P3** | 3.2 Steering Loop 端到端测试 | 3h | 新增 test-steering-loop.sh | M8 | ⬜ 待实施 |
+| **P3** | 4.2 双轨冲突检测 | 1h | check-harness.py | M8 | ⬜ 待实施 |
 
 ---
 
@@ -294,13 +294,13 @@ def check_multi_track_consistency():
 
 当前 harness 最大的 gap 不是缺少功能，而是**设计意图和物理实现之间的断层**:
 
-| 设计意图 | 当前实现 | 缺失的物理层 |
-|---------|---------|-------------|
-| Creative Gate 不可跳过 | 文档约定 | exit-check 不验证"人类确认痕迹" |
-| Steering Loop 自动进化 | 文档约定 | 无 feedback-analyzer 脚本 |
-| Task Package 精确组装 | 手动复制粘贴 | 无自动化生成器 |
-| PM 横切决策层 | Gate 定义在 CLAUDE.md | Orchestrator 行为无法验证 |
-| L-state 一致性 | 文件分离 | 跨文件内容一致性无验证 |
+| 设计意图 | 当前实现 | 缺失的物理层 | M5-M6 修复状态 |
+|---------|---------|-------------|---------------|
+| Creative Gate 不可跳过 | 文档约定 | exit-check 不验证"人类确认痕迹" | ✅ M6: tts-engine/script-writer/visual-designer/frontend-slides 已增加 CG 记录验证 |
+| Steering Loop 自动进化 | 文档约定 | 无 feedback-analyzer 脚本 | ✅ M6: feedback-analyzer.py 已上线 |
+| Task Package 精确组装 | 手动复制粘贴 | 无自动化生成器 | ⬜ M7: package-task.py |
+| PM 横切决策层 | Gate 定义在 CLAUDE.md | Orchestrator 行为无法验证 | ⬜ 长期 |
+| L-state 一致性 | 文件分离 | 跨文件内容一致性无验证 | ✅ M5-M6: check_state_cross_reference() + L0→L2→L4 追溯验证已上线 |
 
 **下一步最关键的动作**不是新增更多 Skill，而是**给现有设计增加物理 enforcement 层**——让每个"应该"变成"必须"，让每个"文档约定"变成"exit-check 验证"。
 
@@ -325,3 +325,5 @@ def check_multi_track_consistency():
 | 日期 | 变更 | 作者 |
 |------|------|------|
 | 2026-04-19 | 初始创建：M4 完成后的系统性优化路径 | Session 6 |
+| 2026-04-20 | M5 完成：exit-check 代码质量标准化 + check-harness.py 深度检查增强 | Session 7 |
+| 2026-04-20 | M6 完成：Creative Gate 记录验证 + feedback-analyzer.py + L0→L2→L4 追溯验证 | Session 7 |
