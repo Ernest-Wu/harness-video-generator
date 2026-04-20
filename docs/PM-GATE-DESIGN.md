@@ -824,11 +824,19 @@ def check_spec_coverage(review_content, spec_content):
 
 > **如果你是新 session，正在恢复上下文，请阅读以下步骤：**
 
+### 场景 A：你刚加入，需要理解完整设计意图
 1. **阅读本文档** (`docs/PM-GATE-DESIGN.md`) — 这是唯一的事实来源
-2. **阅读** `docs/PM-GATE-MILESTONES.md` — 了解当前完成了哪些里程碑
-3. **阅读** `.claude/CLAUDE.md` — 确认 PM Decision Points 段是否已写入（M1 完成标志）
-4. **检查 State 文件** — 查看 `.claude/state/` 中 L0-L6 模板是否已增强（M2 完成标志）
-5. **继续执行** — 从当前里程碑的下一个未完成任务开始
+2. **阅读** `docs/PM-GATE-MILESTONES.md` — 了解当前完成了哪些里程碑（M1-M4）
+3. **阅读** `docs/OPTIMIZATION-ROADMAP.md` — 了解 M4 完成后的系统性优化方向（M5-M8）
+4. **阅读** `.claude/CLAUDE.md` — 确认 PM Decision Points 段是否已写入（M1 完成标志）
+5. **检查 State 文件** — 查看 `.claude/state/` 中 L0-L6 模板是否已增强（M2 完成标志）
+
+### 场景 B：你正在继续优化 harness 本身
+1. **阅读** `docs/PM-GATE-MILESTONES.md` — 确认当前 milestone 和下一个未完成任务
+2. **阅读** `docs/OPTIMIZATION-ROADMAP.md` — 了解优化路径全景、优先级排序和核心洞察
+3. **运行** `python3 .claude/check-harness.py` — 确认 harness 健康基线
+4. **选择一个方向开始实施** — 推荐从 M5（工程化基座）或 M6（运行时 Enforcement）开始
+5. **完成后更新** `docs/PM-GATE-MILESTONES.md` — 标记任务完成并记录日期
 
 > ⚠️ **角色区分**: `docs/` 是开发者文档（你），`.claude/docs/` 是运行时文档（harness 用户）。不要混淆。
 
@@ -838,7 +846,10 @@ def check_spec_coverage(review_content, spec_content):
 - pm-skills 的决策框架通过 Key Concepts 注入，不重新发明
 - Spec Gap Protocol 有 A/B/C/D/E 五级分类
 - FEEDBACK-OBSERVER 增加了 PM 反馈类型
-- release-builder/exit-check.py 之前是空占位符，需要实现
+- release-builder/exit-check.py 已实现完整验证（M1 完成）
+- L2-spec.md（dev）与 L2-content-spec.md（content）已分离（M2 完成）
+- pm/ 域 4 个 Skill 已创建（M4 完成）
+- M5-M8 优化路径已定义，参见 `docs/OPTIMIZATION-ROADMAP.md`
 
 ---
 

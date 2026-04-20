@@ -10,6 +10,77 @@
 
 ## 当前里程碑: M4 — PM Enrichment（已完成）
 
+**M4 完成标志**: PM 决策层完整了——有 pm/ 域的 Skill 提供方法论，有 exit-check 提供验证，有 Gate Points 提供决策点。
+
+---
+
+## M5: 工程化基座（P0 — 让 exit-check 代码质量可维护）
+
+**目标**: 统一 exit-check 代码规范，增强 check-harness.py 的深度检查能力，为后续迭代建立工程基线
+**状态**: ⬜ 未开始
+**前置条件**: M4 完成
+**详细设计**: 参见 `docs/OPTIMIZATION-ROADMAP.md` Phase 1
+
+| # | 任务 | 修改文件 | 验收标准 | 状态 |
+|---|------|---------|---------|------|
+| 5.1 | exit-check 代码质量标准化 | 全部 17 个 `exit-check.py` | 所有 `add_issue` 显式声明 `level=`；`ensure_project_root()` 被调用；check-harness.py AST 检查强制 level 显式 | ⬜ |
+| 5.2 | check-harness.py 深度检查增强 | `.claude/check-harness.py` | 新增 `check_skill_coverage`（SKILL.md Exit-Check Criteria vs exit-check.py add_issue code 对齐）；`check_print_and_exit`（AST 确认 print_and_exit 被调用）；`check_state_cross_reference`（L2 Business Goal 与 L4 Business Goal 一致性） | ⬜ |
+
+**M5 完成标志**: 修改任何一个 exit-check 后，check-harness.py 能检测出 level 缺失、print_and_exit 遗漏、skill coverage 不匹配等问题。
+
+---
+
+## M6: 运行时 Enforcement（P1 — 让协议不只是文档）
+
+**目标**: 给 Creative Gate、Steering Loop、状态追溯增加物理验证层
+**状态**: ⬜ 未开始
+**前置条件**: M5 完成
+**详细设计**: 参见 `docs/OPTIMIZATION-ROADMAP.md` Phase 2 + Phase 3（部分）+ Phase 4（部分）
+
+| # | 任务 | 修改文件 | 验收标准 | 状态 |
+|---|------|---------|---------|------|
+| 6.1 | Creative Gate 记录验证机制 | `tts-engine/exit-check.py`, `script-writer/exit-check.py`, `visual-designer/exit-check.py` | 每个 exit-check 验证对应 state 文件中存在 Creative Gate 选择记录 | ⬜ |
+| 6.2 | feedback-analyzer.py | `.claude/hooks/feedback-analyzer.py` | 纯 stdlib 实现；扫描 feedback/ 目录并按 (skill, type) 聚合计数；输出达到毕业阈值的候选提案 | ⬜ |
+| 6.3 | FEEDBACK-INDEX.md 初始结构 | `.claude/feedback/FEEDBACK-INDEX.md` | 含示例条目和毕业阈值说明；feedback-analyzer 输出可写入此文件 | ⬜ |
+| 6.4 | L0→L2→L4 跨文件追溯验证 | `dev-planner/exit-check.py`, `product-spec-builder/exit-check.py` | dev-planner 验证 Phase 0 覆盖所有 P0 features；product-spec-builder 验证 L0→L2 Business Goal 对齐 | ⬜ |
+
+**M6 完成标志**: 任何 agent 试图跳过 Creative Gate 或使用不一致的 state 数据时，exit-check 会物理拦截。
+
+---
+
+## M7: 可观测性与开发者体验（P2 — 让 harness 使用者看得见进度）
+
+**目标**: 降低 Orchestrator 和用户的认知负担，让项目状态一目了然
+**状态**: ⬜ 未开始
+**前置条件**: M6 完成
+**详细设计**: 参见 `docs/OPTIMIZATION-ROADMAP.md` Phase 2（剩余部分）+ Phase 3（剩余部分）
+
+| # | 任务 | 修改文件 | 验收标准 | 状态 |
+|---|------|---------|---------|------|
+| 7.1 | exit-check 单元测试框架 | 新增 `tests/` 或 `.claude/skills/_utils/test_exit_checks.py` | 为至少 5 个核心 exit-check（release-builder, code-review, script-writer, product-spec-builder, content-strategy）提供 mock state 测试；运行时间 < 5 秒 | ⬜ |
+| 7.2 | Task Package 自动化生成器 | 新增 `.claude/package-task.py` | CLI: `--skill`, `--phase`, `--task`；自动读取 L1-L4 state 文件和 SKILL.md；输出填充好的 Task Package Markdown | ⬜ |
+| 7.3 | 当前进度仪表盘 | 新增 `.claude/status-board.py` | 读取全部 state 文件；输出 dev/content track 的 Gate 通过状态、当前活跃 Phase、阻塞项 | ⬜ |
+| 7.4 | Steering Loop 端到端测试 | 新增 `.claude/hooks/test-steering-loop.sh` | 模拟 3 次同类反馈 → feedback-analyzer 检测毕业 → evolution-runner 生成提案 → 人类确认 → 应用到 SKILL.md | ⬜ |
+
+**M7 完成标志**: 新用户可以在 30 秒内通过 `status-board.py` 了解项目全局状态；修改 exit-check 后可以在 10 秒内通过单元测试验证正确性。
+
+---
+
+## M8: 扩展性与动态发现（P3 — 让新增 skill 零摩擦）
+
+**目标**: 消除新增 skill 时的手动配置负担
+**状态**: ⬜ 未开始
+**前置条件**: M7 完成
+**详细设计**: 参见 `docs/OPTIMIZATION-ROADMAP.md` Phase 5
+
+| # | 任务 | 修改文件 | 验收标准 | 状态 |
+|---|------|---------|---------|------|
+| 8.1 | check-harness.py 动态发现 | `.claude/check-harness.py` | 从 `.claude/skills/{domain}/` 目录自动扫描子目录；不再硬编码 DEV_SKILLS / CONTENT_SKILLS / PM_SKILLS | ⬜ |
+| 8.2 | router.py 动态索引 | `.claude/router.py` | 从每个 skill 的 `SKILL.md` frontmatter 或独立索引文件读取 triggers；不再硬编码 SKILL_INDEX | ⬜ |
+| 8.3 | 双轨运行时冲突检测 | `.claude/check-harness.py` | 当 L2-spec.md 和 L2-content-spec.md 同时存在时，检测 Business Goal 是否冲突 | ⬜ |
+
+**M8 完成标志**: 新增一个 skill 只需创建目录（`SKILL.md` + `exit-check.py`），无需修改任何其他文件即可被 harness 识别和路由。
+
 ---
 
 ## M1: 基础加固（P0 — 修复安全漏洞 + 显式化 PM 角色）
