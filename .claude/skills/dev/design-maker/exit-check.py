@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 DATA_PATH = Path(".claude/state/L5-design-data.yaml")
 SPEC_PATH = Path(".claude/state/L2-spec.md")
@@ -17,25 +17,25 @@ BRIEF_PATH = Path(".claude/state/L3-design.md")
 
 def check():
     if not DATA_PATH.exists():
-        add_issue("file_missing", f"{DATA_PATH} does not exist.")
+        add_issue("file_missing", f"{DATA_PATH} does not exist.", level="high")
         return
 
     text = DATA_PATH.read_text(encoding="utf-8")
 
     # Must reference a source
     if not re.search(r"source:\s*(figma|pencil|json|yaml)", text, re.IGNORECASE):
-        add_issue("source_missing", "No design source (figma/pencil/json/yaml) found.")
+        add_issue("source_missing", "No design source (figma/pencil/json/yaml) found.", level="high")
 
     # Must have at least one page
     pages_match = re.search(r"pages?:", text, re.IGNORECASE)
     if not pages_match:
-        add_issue("pages_missing", "No pages list found. Design deliverable must name the screens/components it covers.")
+        add_issue("pages_missing", "No pages list found. Design deliverable must name the screens/components it covers.", level="high")
     else:
         # Check each page has elements
         pages_section = re.split(r"pages?:", text, flags=re.IGNORECASE)[1] if pages_match else ""
         page_items = re.findall(r"^\s*-\s+\w+", pages_section, re.MULTILINE)
         if len(page_items) < 1:
-            add_issue("pages_empty", "Pages list exists but contains no items.")
+            add_issue("pages_empty", "Pages list exists but contains no items.", level="high")
 
     # Check for error/loading/empty state coverage
     state_keywords = ["error", "loading", "empty", "success"]
@@ -84,6 +84,7 @@ def check():
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("design-maker")
 

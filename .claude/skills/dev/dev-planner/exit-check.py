@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 PLAN_PATH = Path(".claude/state/L4-plan.md")
 SPEC_PATH = Path(".claude/state/L2-spec.md")
@@ -49,6 +49,46 @@ def check():
 
     # ── 4. PM Scope Gate (G2) checks ───────────────────────────
     check_phase_spec_mapping(text)
+
+
+def extract_p0_features(spec_content: str) -> list[str]:
+    """Extract P0 feature names from L2-spec.md."""
+    p0_match = re.search(
+        r"(?:###|##)\s*P0.*?\n(.*?)(?=(?:###|##)\s*(?:P1|P2|Scope|References)|\Z)",
+        spec_content,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if not p0_match:
+        return []
+
+    p0_section = p0_match.group(1)
+    items = re.findall(r"^(?:[-*]|\d+\.)\s+(.*?)$", p0_section, re.MULTILINE)
+    features = []
+    for item in items:
+        name = re.split(r"[—:：]", item)[0].strip()
+        if name:
+            features.append(name)
+    return features
+
+
+def check_p0_in_phase0(p0_features: list[str], plan_content: str) -> list[str]:
+    """Check which P0 features are not referenced in Phase 0 / MVP section."""
+    mvp_match = re.search(
+        r"(?:###|##)\s*(?:Phase\s*0|MVP|最小可行).*?\n(.*?)(?=(?:###|##)\s*(?:Phase\s*1|Risk|References)|\Z)",
+        plan_content,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if not mvp_match:
+        return p0_features
+
+    mvp_text = mvp_match.group(1).lower()
+    missing = []
+    for feature in p0_features:
+        words = re.sub(r"[^\w\s]", "", feature.lower()).split()
+        significant = [w for w in words if len(w) >= 2]
+        if significant and not any(w in mvp_text for w in significant[:3]):
+            missing.append(feature)
+    return missing
 
 
 def check_phase_spec_mapping(plan_content):
@@ -98,40 +138,23 @@ def check_phase_spec_mapping(plan_content):
                 level="warning",
             )
 
-    # ── 4b. P0 features in MVP check ──────────────────────────
-    p0_features = re.findall(r"P0.*?—.*?$", spec_content, re.MULTILINE | re.IGNORECASE)
+    # ── 4b. P0 features in MVP / Phase 0 coverage check ───────
+    p0_features = extract_p0_features(spec_content)
     if p0_features:
-        plan_lower = plan_content.lower()
-        mvp_section = re.search(
-            r"MVP\s+Boundary|MVP\s+Scope|Phase\s*0|最小可行",
-            plan_content,
-            re.IGNORECASE,
-        )
-        if mvp_section:
-            mvp_text = plan_content[
-                mvp_section.start() : min(mvp_section.end() + 500, len(plan_content))
-            ]
-            p0_in_mvp = sum(
-                1
-                for f in p0_features
-                if re.sub(r"[^\w\s]", "", f.lower()).split()[0:3]
-                and any(
-                    w in mvp_text.lower()
-                    for w in re.sub(r"[^\w\s]", "", f.lower()).split()[:3]
-                )
-            )
+        missing = check_p0_in_phase0(p0_features, plan_content)
+        if missing:
             add_issue(
-                "p0_features_found",
-                f"Found {len(p0_features)} P0 features in spec, "
-                f"{p0_in_mvp} referenced in MVP section.",
-                level="info",
+                "p0_feature_not_in_phase0",
+                f"{len(missing)} P0 feature(s) not referenced in Phase 0 / MVP: "
+                f"{', '.join(missing[:3])}{'...' if len(missing) > 3 else ''}. "
+                f"All P0 features must be mapped to Phase 0. (PM Scope Gate G2)",
+                level="high",
             )
         else:
             add_issue(
-                "no_mvp_in_plan",
-                "Spec has P0 features but plan has no MVP Boundary/Phase 0 section. "
-                "P0 features must be in MVP. (PM Scope Gate G2)",
-                level="warning",
+                "p0_features_in_phase0",
+                f"All {len(p0_features)} P0 features are referenced in Phase 0 / MVP.",
+                level="info",
             )
     else:
         has_priority = re.search(
@@ -191,6 +214,7 @@ def check_phase_spec_mapping(plan_content):
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("Dev Plan")
 

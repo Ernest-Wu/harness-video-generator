@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 DESIGN_PATH = Path(".claude/state/L3-design.md")
 SPEC_PATH = Path(".claude/state/L2-spec.md")
@@ -150,6 +150,7 @@ def check_spec_alignment(design_content):
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("Design Brief")
 

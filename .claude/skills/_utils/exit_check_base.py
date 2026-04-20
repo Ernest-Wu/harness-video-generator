@@ -43,7 +43,7 @@ def ensure_project_root() -> Path:
 _VALID_LEVELS = frozenset({"high", "warning", "info"})
 
 
-def add_issue(code: str, detail: str, level: str = "high") -> None:
+def add_issue(code: str, detail: str, level: str) -> None:
     """Append an issue with severity level.
 
     Args:
@@ -60,14 +60,6 @@ def add_issue(code: str, detail: str, level: str = "high") -> None:
             f"Invalid level '{level}'. Must be one of: {_VALID_LEVELS}"
         )
     ISSUES.append((level, code, detail))
-
-
-if __name__ == "__main__":
-    print(
-        "This module is not meant to be run directly. "
-        "Import add_issue and print_and_exit from your exit-check.py script."
-    )
-    sys.exit(1)
 
 
 def print_and_exit(skill_name: str = "") -> None:
@@ -134,3 +126,11 @@ def print_and_exit(skill_name: str = "") -> None:
             print("✅ Exit check passed.")
 
     sys.exit(0)
+
+
+if __name__ == "__main__":
+    print(
+        "This module is not meant to be run directly. "
+        "Import add_issue and print_and_exit from your exit-check.py script."
+    )
+    sys.exit(1)

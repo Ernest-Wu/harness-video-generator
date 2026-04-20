@@ -11,7 +11,7 @@ from shutil import which as shutil_which
 from typing import List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 PROJECT_ROOT = Path(".")
 BUILD_COMMANDS = [
@@ -129,6 +129,7 @@ def check():
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("dev-builder")
 

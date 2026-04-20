@@ -39,12 +39,12 @@
 
 | # | 任务 | 修改文件 | 验收标准 | 状态 |
 |---|------|---------|---------|------|
-| 6.1 | Creative Gate 记录验证机制 | `tts-engine/exit-check.py`, `script-writer/exit-check.py`, `visual-designer/exit-check.py` | 每个 exit-check 验证对应 state 文件中存在 Creative Gate 选择记录 | ⬜ |
-| 6.2 | feedback-analyzer.py | `.claude/hooks/feedback-analyzer.py` | 纯 stdlib 实现；扫描 feedback/ 目录并按 (skill, type) 聚合计数；输出达到毕业阈值的候选提案 | ⬜ |
-| 6.3 | FEEDBACK-INDEX.md 初始结构 | `.claude/feedback/FEEDBACK-INDEX.md` | 含示例条目和毕业阈值说明；feedback-analyzer 输出可写入此文件 | ⬜ |
-| 6.4 | L0→L2→L4 跨文件追溯验证 | `dev-planner/exit-check.py`, `product-spec-builder/exit-check.py` | dev-planner 验证 Phase 0 覆盖所有 P0 features；product-spec-builder 验证 L0→L2 Business Goal 对齐 | ⬜ |
+| 6.1 | Creative Gate 记录验证机制 | `tts-engine/exit-check.py`, `script-writer/exit-check.py`, `visual-designer/exit-check.py`, `frontend-slides/exit-check.py` | 每个 exit-check 验证对应 state 文件中存在 Creative Gate 选择记录 | ✅ |
+| 6.2 | feedback-analyzer.py | `.claude/hooks/feedback-analyzer.py` | 纯 stdlib 实现；扫描 feedback/ 目录并按 (skill, type) 聚合计数；输出达到毕业阈值的候选提案 | ✅ |
+| 6.3 | FEEDBACK-INDEX.md 初始结构 | `.claude/feedback/FEEDBACK-INDEX.md` | 含示例条目和毕业阈值说明；feedback-analyzer 输出可写入此文件 | ✅ |
+| 6.4 | L0→L2→L4 跨文件追溯验证 | `dev-planner/exit-check.py`, `product-spec-builder/exit-check.py` | dev-planner 验证 Phase 0 覆盖所有 P0 features；product-spec-builder 验证 L0→L2 Business Goal 对齐 | ✅ |
 
-**M6 完成标志**: 任何 agent 试图跳过 Creative Gate 或使用不一致的 state 数据时，exit-check 会物理拦截。
+**M6 完成标志**: ✅ 已完成（2026-04-20）
 
 ---
 

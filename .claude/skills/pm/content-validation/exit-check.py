@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 PROJECT_ROOT = Path(".")
 STATE_DIR = PROJECT_ROOT / ".claude" / "state"
@@ -118,6 +118,7 @@ def check_utm_tracking():
 
 
 def main() -> int:
+    ensure_project_root()
     check_l5_exists()
     check_required_sections()
     check_decision_content()

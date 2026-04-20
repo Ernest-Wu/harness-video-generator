@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 SCENES_PATH = Path("scenes.json")
 SPEC_PATH = Path(".claude/state/L2-content-spec.md")
@@ -73,6 +73,7 @@ def check():
             "ffprobe_missing",
             "ffprobe is not installed or not in PATH. Video validation requires ffmpeg/ffprobe. "
             "Install with: brew install ffmpeg (macOS) or apt install ffmpeg (Linux).",
+            level="high",
         )
 
     platform = get_platform()
@@ -83,6 +84,7 @@ def check():
         add_issue(
             "base_video_missing",
             f"{BASE_VIDEO_PATH} does not exist. Remotion must produce a base video first.",
+            level="high",
         )
     else:
         info = get_video_info(BASE_VIDEO_PATH)
@@ -90,6 +92,7 @@ def check():
             add_issue(
                 "base_video_unreadable",
                 f"Cannot read {BASE_VIDEO_PATH} with ffprobe. Ensure ffmpeg/ffprobe is installed and the file is a valid video.",
+                level="high",
             )
         else:
             # Check resolution
@@ -103,6 +106,7 @@ def check():
                     add_issue(
                         "resolution_mismatch",
                         f"Base video resolution {width}x{height} doesn't match platform {platform} ({expected_width}x{expected_height}).",
+                        level="high",
                     )
 
                 # Check fps
@@ -116,11 +120,13 @@ def check():
                     add_issue(
                         "fps_too_low",
                         f"Base video fps ({fps:.1f}) is below minimum {MIN_FPS}.",
+                        level="warning",
                     )
             except (StopIteration, ValueError, KeyError):
                 add_issue(
                     "base_video_no_stream",
                     f"Cannot find video stream in {BASE_VIDEO_PATH}.",
+                    level="high",
                 )
 
     # 2. Final video must exist
@@ -128,6 +134,7 @@ def check():
         add_issue(
             "final_video_missing",
             f"{FINAL_VIDEO_PATH} does not exist. Video composition must produce the final video.",
+            level="high",
         )
     else:
         info = get_video_info(FINAL_VIDEO_PATH)
@@ -135,6 +142,7 @@ def check():
             add_issue(
                 "final_video_unreadable",
                 f"Cannot read {FINAL_VIDEO_PATH} with ffprobe.",
+                level="high",
             )
         else:
             # Check fps for final video too
@@ -152,11 +160,13 @@ def check():
                     add_issue(
                         "final_fps_too_low",
                         f"Final video fps ({fps:.1f}) is below minimum {MIN_FPS}.",
+                        level="warning",
                     )
             except (StopIteration, ValueError, KeyError):
                 add_issue(
                     "final_video_no_stream",
                     f"Cannot find video stream in {FINAL_VIDEO_PATH}.",
+                    level="high",
                 )
 
     # 3. Duration sanity check (if we have both scenes and video)
@@ -184,6 +194,7 @@ def check():
                                     "duration_mismatch",
                                     f"Video duration ({duration:.1f}s) is {ratio:.0%} of estimated ({estimated_total}s). "
                                     f"Expected within 95%-105%.",
+                                    level="warning",
                                 )
                     except (ValueError, KeyError):
                         pass
@@ -192,6 +203,7 @@ def check():
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("video-compositor")
 

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 # Use relative path for PROJECT_ROOT
 PROJECT_ROOT = Path(".")
@@ -134,6 +134,7 @@ def check_compliance():
 
 
 def main() -> int:
+    ensure_project_root()
     check_l0_exists()
     check_required_sections()
     check_target_audience_specificity()

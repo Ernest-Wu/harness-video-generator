@@ -128,6 +128,7 @@ def check_hooks():
         "content-validator.sh",
         "detect-feedback-signal.py",
         "mark-review-needed.sh",
+        "feedback-analyzer.py",
     ]
     for name in expected:
         if not (hooks_dir / name).exists():
@@ -156,6 +157,7 @@ def check_syntax():
     """T7: Verify all .py files compile and all .sh files pass bash -n."""
     # Python files
     py_files = list((ROOT / "skills").rglob("*.py"))
+    py_files.extend((ROOT / "hooks").glob("*.py"))
     py_files.append(ROOT / "router.py")
     py_files.append(ROOT / "check-harness.py")
     for py_file in py_files:
@@ -251,6 +253,148 @@ def check_exit_check_format():
             )
 
 
+def check_add_issue_level():
+    """T12: Verify all add_issue calls explicitly declare level.
+
+    Note: Calls via **kwargs (e.g., add_issue(**kwargs)) are not supported
+    and would be flagged as missing level. Use explicit keyword arguments.
+    """
+    skills_dir = ROOT / "skills"
+    for exit_check in skills_dir.rglob("exit-check.py"):
+        source = exit_check.read_text(encoding="utf-8")
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            continue
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Name) and func.id == "add_issue":
+                    # add_issue requires 3 args: code, detail, level
+                    # After removing default, all calls must have level
+                    has_level = False
+                    # Check positional args (3rd arg is level)
+                    if len(node.args) >= 3:
+                        has_level = True
+                    # Check keyword args
+                    for kw in node.keywords:
+                        if kw.arg == "level":
+                            has_level = True
+                            break
+                    if not has_level:
+                        ISSUES.append(
+                            (
+                                "exit_check_level_implicit",
+                                f"{exit_check}: add_issue call missing explicit level= argument",
+                            )
+                        )
+
+
+def check_print_and_exit():
+    """T13: Verify all exit-check.py scripts call print_and_exit inside main()."""
+    skills_dir = ROOT / "skills"
+    for exit_check in skills_dir.rglob("exit-check.py"):
+        source = exit_check.read_text(encoding="utf-8")
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            continue
+
+        has_print_and_exit = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "main":
+                for child in ast.walk(node):
+                    if isinstance(child, ast.Call):
+                        func = child.func
+                        if isinstance(func, ast.Name) and func.id == "print_and_exit":
+                            has_print_and_exit = True
+                            break
+                break
+
+        if not has_print_and_exit:
+            ISSUES.append(
+                (
+                    "exit_check_no_print_and_exit",
+                    f"{exit_check} main() does not call print_and_exit()",
+                )
+            )
+
+
+def check_skill_coverage():
+    """T14: Rough alignment between SKILL.md Exit-Check Criteria and exit-check.py add_issue calls."""
+    skills_dir = ROOT / "skills"
+    for skill_md in skills_dir.rglob("SKILL.md"):
+        content = skill_md.read_text(encoding="utf-8")
+        exit_check = skill_md.parent / "exit-check.py"
+        if not exit_check.exists():
+            continue
+
+        # Count criteria items in Exit-Check Criteria section
+        criteria_count = 0
+        match = re.search(
+            r"## Exit-Check Criteria\s*\n+(.*?)(?=\n## |\Z)",
+            content,
+            re.DOTALL,
+        )
+        if match:
+            section = match.group(1)
+            # Count numbered list items (e.g., "1.", "2.") and bullet items ("-", "*")
+            criteria_count = len(
+                re.findall(r"^\s*(?:\d+\.|[\-*])\s+", section, re.MULTILINE)
+            )
+
+        # Count add_issue calls in exit-check.py
+        ec_source = exit_check.read_text(encoding="utf-8")
+        try:
+            tree = ast.parse(ec_source)
+        except SyntaxError:
+            continue
+        issue_count = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                func = node.func
+                if isinstance(func, ast.Name) and func.id == "add_issue":
+                    issue_count += 1
+
+        # Heuristic: if exit-check has fewer than 50% of criteria items, flag it
+        if criteria_count > 0 and issue_count < criteria_count * 0.5:
+            ISSUES.append(
+                (
+                    "skill_coverage_low",
+                    f"{skill_md.parent.name}: {issue_count} add_issue calls but "
+                    f"{criteria_count} Exit-Check Criteria items. "
+                    f"Coverage below 50% — verify exit-check aligns with SKILL.md.",
+                )
+            )
+
+
+def check_state_cross_reference():
+    """T15: Verify L2-spec.md and L4-plan.md Business Goal consistency."""
+    state_dir = ROOT / "state"
+    l2 = state_dir / "L2-spec.md"
+    l4 = state_dir / "L4-plan.md"
+
+    if not l2.exists() or not l4.exists():
+        return
+
+    l2_content = l2.read_text(encoding="utf-8")
+    l4_content = l4.read_text(encoding="utf-8")
+
+    l2_has_bg = "## Business Goal" in l2_content
+    l4_has_bg = "## Business Goal" in l4_content
+
+    if l2_has_bg != l4_has_bg:
+        ISSUES.append(
+            (
+                "state_business_goal_mismatch",
+                f"L2-spec.md {'has' if l2_has_bg else 'lacks'} '## Business Goal' but "
+                f"L4-plan.md {'has' if l4_has_bg else 'lacks'} it. "
+                f"Cross-file consistency required.",
+            )
+        )
+
+
 def main() -> int:
     check_skills()
     check_hooks()
@@ -260,6 +404,10 @@ def main() -> int:
     check_skill_frontmatter()
     check_state_schema()
     check_exit_check_format()
+    check_add_issue_level()
+    check_print_and_exit()
+    check_skill_coverage()
+    check_state_cross_reference()
 
     if not ISSUES:
         print(

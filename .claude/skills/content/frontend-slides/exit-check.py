@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 SLIDES_PATH = Path("slides-preview.html")
 DESIGN_SPEC_PATH = Path(".claude/state/L3-design.md")
@@ -88,21 +88,22 @@ def check():
         )
     else:
         content = DESIGN_SPEC_PATH.read_text(encoding="utf-8")
-        if "Mood" not in content and "mood" not in content.lower():
+        if not re.search(r"Mood\s*[:：]\s*\S+", content, re.IGNORECASE):
             add_issue(
                 "design_spec_missing_mood",
-                f"{DESIGN_SPEC_PATH} must specify Mood selection.",
+                f"{DESIGN_SPEC_PATH} must specify Mood with a non-empty value.",
                 level="high",
             )
-        if "Style" not in content and "style" not in content.lower():
+        if not re.search(r"Style\s*[:：]\s*\S+", content, re.IGNORECASE):
             add_issue(
                 "design_spec_missing_style",
-                f"{DESIGN_SPEC_PATH} must specify Style selection.",
+                f"{DESIGN_SPEC_PATH} must specify Style with a non-empty value.",
                 level="high",
             )
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("frontend-slides")
 

@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 SPEC_PATH = Path(".claude/state/L2-spec.md")
+L0_STRATEGY = Path(".claude/state/L0-strategy.md")
 
 REQUIRED_SECTIONS = [
     ("problem", r"Problem\s+Statement|问题陈述|背景"),
@@ -104,6 +105,106 @@ def check():
     # ── PM Decision Quality Checks (warning level) ─────────────
     check_decision_quality(text)
 
+    # ── L0→L2 Traceability Checks ─────────────────────────────
+    check_l0_l2_alignment(text)
+
+
+STOPWORDS = frozenset({
+    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+    "of", "and", "or", "to", "in", "for", "with", "on", "at", "by", "from",
+    "as", "it", "its", "this", "that", "these", "those", "i", "we", "you",
+    "they", "them", "their", "our", "my", "your", "his", "her", "has", "have",
+    "had", "do", "does", "did", "will", "would", "could", "should", "may",
+    "might", "can", "shall", "的", "了", "在", "是", "和", "或", "与", "有",
+    "为", "对", "到", "从", "等", "及", "将", "以", "并", "中", "上", "下",
+})
+
+
+# Common short technical terms that should be treated as keywords
+EXTRA_SHORT = frozenset({"ai", "ux", "ui", "ar", "vr", "kpi", "okr", "cta", "tts", "api", "id", "qa", "pwa", "sdk", "mvp"})
+
+
+def extract_keywords(text: str) -> set[str]:
+    """Extract meaningful keywords from text (English words + Chinese chars)."""
+    words = re.findall(r"[a-zA-Z]{2,}", text.lower())
+    chars = re.findall(r"[\u4e00-\u9fff]{2,}", text)
+    return ((set(words) | set(chars)) - STOPWORDS) | EXTRA_SHORT
+
+
+def extract_section_content(text: str, heading: str) -> str:
+    """Extract content under a specific ## heading."""
+    pattern = rf"^##\s+{re.escape(heading)}\s*\n(.*?)(?=^##\s|\Z)"
+    match = re.search(pattern, text, re.MULTILINE | re.IGNORECASE | re.DOTALL)
+    return match.group(1).strip() if match else ""
+
+
+def check_l0_l2_alignment(spec_content: str):
+    """Verify L0-strategy.md content is reflected in L2-spec.md."""
+    if not L0_STRATEGY.exists():
+        return
+
+    l0_content = L0_STRATEGY.read_text(encoding="utf-8")
+
+    # 1. Business Goal alignment
+    l0_bg = extract_section_content(l0_content, "Business Goal")
+    l2_bg = extract_section_content(spec_content, "Business Goal")
+
+    if l0_bg and l2_bg:
+        l0_kw = extract_keywords(l0_bg)
+        l2_kw = extract_keywords(l2_bg)
+        if l0_kw and not (l0_kw & l2_kw):
+            add_issue(
+                "l0_l2_business_goal_gap",
+                "L0-strategy.md defines Business Goal but L2-spec.md's Business Goal "
+                "shares no substantive keywords with it. CG0 traceability requires alignment.",
+                level="warning",
+            )
+    elif l0_bg and not l2_bg:
+        add_issue(
+            "l2_missing_business_goal",
+            "L0-strategy.md has Business Goal but L2-spec.md does not. "
+            "CG0 requires strategic intent to flow into product spec.",
+            level="warning",
+        )
+
+    # 2. Target Audience alignment
+    l0_audience = extract_section_content(l0_content, "Target Audience")
+    if l0_audience:
+        l2_user = extract_section_content(spec_content, "Target User")
+        if not l2_user:
+            l2_user = extract_section_content(spec_content, "用户画像")
+        if l2_user:
+            l0_kw = extract_keywords(l0_audience)
+            l2_kw = extract_keywords(l2_user)
+            if l0_kw and not (l0_kw & l2_kw):
+                add_issue(
+                    "l0_l2_audience_gap",
+                    "L0-strategy.md defines Target Audience but L2-spec.md's Target User "
+                    "shares no substantive keywords with it. CG0 traceability requires audience alignment.",
+                    level="warning",
+                )
+        else:
+            add_issue(
+                "l2_missing_target_user",
+                "L0-strategy.md has Target Audience but L2-spec.md has no Target User section. "
+                "CG0 requires audience alignment.",
+                level="warning",
+            )
+
+    # 3. KPI alignment
+    l0_kpi = extract_section_content(l0_content, "KPI")
+    if l0_kpi:
+        l2_metrics = extract_section_content(spec_content, "Success Metrics")
+        l0_kw = extract_keywords(l0_kpi)
+        l2_kw = extract_keywords(l2_metrics)
+        if l0_kw and not (l0_kw & l2_kw):
+            add_issue(
+                "l0_l2_kpi_gap",
+                "L0-strategy.md defines KPI but L2-spec.md's Success Metrics "
+                "shares no substantive keywords with it. CG0 traceability requires KPI alignment.",
+                level="warning",
+            )
+
 
 def check_decision_quality(spec_content):
     if not re.search(
@@ -158,6 +259,7 @@ def extract_section(text: str, pattern: str) -> Optional[str]:
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("Product Spec")
 

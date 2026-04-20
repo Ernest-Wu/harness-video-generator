@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 SCENES_PATH = Path("scenes.json")
 SPEC_PATH = Path(".claude/state/L2-content-spec.md")
@@ -43,6 +43,7 @@ def check():
         add_issue(
             "invalid_format",
             f"{SCENES_PATH} must be a list or dict with 'scenes' key. Got: {type(scenes).__name__}",
+            level="high",
         )
         return
 
@@ -103,16 +104,16 @@ def check():
         )
     else:
         content = SPEC_PATH.read_text(encoding="utf-8")
-        if "Platform" not in content and "platform" not in content.lower():
+        if not re.search(r"Platform\s*[:：]\s*\S+", content, re.IGNORECASE):
             add_issue(
                 "spec_missing_platform",
-                f"{SPEC_PATH} must specify Platform (9:16, 16:9, or 4:5).",
+                f"{SPEC_PATH} must specify Platform with a non-empty value (9:16, 16:9, or 4:5).",
                 level="high",
             )
-        if "Mood" not in content and "mood" not in content.lower():
+        if not re.search(r"Mood\s*[:：]\s*\S+", content, re.IGNORECASE):
             add_issue(
                 "spec_missing_mood",
-                f"{SPEC_PATH} must specify Mood (Impressed, Excited, Calm, or Inspired).",
+                f"{SPEC_PATH} must specify Mood with a non-empty value.",
                 level="high",
             )
 
@@ -187,6 +188,7 @@ def check():
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("script-writer")
 

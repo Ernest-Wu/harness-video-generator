@@ -26,7 +26,7 @@ from pathlib import Path
 from shutil import which as shutil_which
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-from _utils.exit_check_base import add_issue, print_and_exit
+from _utils.exit_check_base import add_issue, print_and_exit, ensure_project_root
 
 STATE_DIR = Path(".claude/state")
 PROJECT_ROOT = Path(".")
@@ -297,6 +297,7 @@ def check_smoke_test():
 
 
 def main() -> int:
+    ensure_project_root()
     check()
     print_and_exit("PM Release Gate")
 

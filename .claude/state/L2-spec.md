@@ -17,6 +17,9 @@
 ### P2 (Nice to Have)
 - {feature} — {user outcome}
 
+## Business Goal
+{What business objective does this product serve? How does it tie to company strategy?}
+
 ## Success Metrics
 | Metric | Target | Measurement |
 |--------|--------|-------------|
