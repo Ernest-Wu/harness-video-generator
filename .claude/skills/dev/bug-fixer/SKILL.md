@@ -3,6 +3,7 @@ name: bug-fixer
 description: Systematic four-stage debugging without guesswork. Use when a build fails, test fails, or review finds a defect.
 intent: Apply a doctor-like diagnostic process to debugging - collect evidence, compare patterns, form hypotheses, test them one by one, then implement and verify. Prevents trial-and-error coding that introduces new bugs.
 type: interactive
+triggers: ["bug", "fix", "error", "crash", "broken", "failing test"]
 ---
 
 ## Purpose

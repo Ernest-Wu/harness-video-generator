@@ -3,6 +3,7 @@ name: design-maker
 description: Generate design deliverables from spec and design brief. Use when you need mockups, wireframes, or structured design data before development.
 intent: Translate Product Spec and Design Brief into concrete design deliverables that serve as the highest authority for downstream development. Outputs can be structured JSON for code generation, Figma files via API, or Pencil-compatible wireframes.
 type: interactive
+triggers: ["mockup", "figma", "prototype", "design file", "screen"]
 ---
 
 ## Purpose

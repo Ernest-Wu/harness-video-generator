@@ -71,15 +71,16 @@
 ## M8: 扩展性与动态发现（P3 — 让新增 skill 零摩擦）
 
 **目标**: 消除新增 skill 时的手动配置负担
-**状态**: ⬜ 未开始
+**状态**: ✅ 已完成
+**完成日期**: 2026-04-21
 **前置条件**: M7 完成
 **详细设计**: 参见 `docs/OPTIMIZATION-ROADMAP.md` Phase 5
 
 | # | 任务 | 修改文件 | 验收标准 | 状态 |
 |---|------|---------|---------|------|
-| 8.1 | check-harness.py 动态发现 | `.claude/check-harness.py` | 从 `.claude/skills/{domain}/` 目录自动扫描子目录；不再硬编码 DEV_SKILLS / CONTENT_SKILLS / PM_SKILLS | ⬜ |
-| 8.2 | router.py 动态索引 | `.claude/router.py` | 从每个 skill 的 `SKILL.md` frontmatter 或独立索引文件读取 triggers；不再硬编码 SKILL_INDEX | ⬜ |
-| 8.3 | 双轨运行时冲突检测 | `.claude/check-harness.py` | 当 L2-spec.md 和 L2-content-spec.md 同时存在时，检测 Business Goal 是否冲突 | ⬜ |
+| 8.1 | check-harness.py 动态发现 | `.claude/check-harness.py` | 从 `.claude/skills/{domain}/` 目录自动扫描子目录；不再硬编码 DEV_SKILLS / CONTENT_SKILLS / PM_SKILLS | ✅ |
+| 8.2 | router.py 动态索引 | `.claude/router.py` | 从每个 skill 的 `SKILL.md` frontmatter 读取 triggers；不再硬编码 SKILL_INDEX | ✅ |
+| 8.3 | 双轨运行时冲突检测 | `.claude/check-harness.py` | 当 L2-spec.md 和 L2-content-spec.md 同时存在时，检测 Business Goal 是否冲突 | ✅ |
 
 **M8 完成标志**: 新增一个 skill 只需创建目录（`SKILL.md` + `exit-check.py`），无需修改任何其他文件即可被 harness 识别和路由。
 

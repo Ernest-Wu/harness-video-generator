@@ -3,6 +3,7 @@ name: frontend-slides
 description: Generate visually stunning HTML slides with Mood Selection, 3 Style Previews, and free-form layout. Called by visual-designer as the HTML execution layer.
 intent: Provide the visual design execution capability for content production — transform slide data into polished HTML presentations with mood-driven styling, multiple style previews for user selection, and responsive layouts optimized for video output.
 type: interactive
+triggers: ["HTML slides", "slide design", "slide style", "mood selection", "style preview", "幻灯片设计", "风格预览", "mood", "slide layout"]
 ---
 
 ## Purpose

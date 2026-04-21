@@ -4,6 +4,7 @@ description: Turn vague product ideas into structured AI-readable specs via adap
 intent: >-
   Guide users from fuzzy ideas to decision-ready product specifications through multi-turn discovery. The output is not for humans to read—it's a execution baseline for downstream Skills (design-brief-builder, dev-planner, dev-builder, code-review).
 type: interactive
+triggers: ["idea", "spec", "requirement", "PRD", "scope", "what to build"]
 best_for:
   - "Starting a new product or major feature"
   - "Clarifying scope before design or development"

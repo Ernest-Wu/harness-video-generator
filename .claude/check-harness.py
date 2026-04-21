@@ -14,32 +14,6 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 ISSUES = []
 
-DEV_SKILLS = [
-    "product-spec-builder",
-    "design-brief-builder",
-    "design-maker",
-    "dev-planner",
-    "dev-builder",
-    "bug-fixer",
-    "code-review",
-    "release-builder",
-]
-
-CONTENT_SKILLS = [
-    "script-writer",
-    "visual-designer",
-    "frontend-slides",
-    "tts-engine",
-    "video-compositor",
-]
-
-PM_SKILLS = [
-    "validation",
-    "content-strategy",
-    "distribution-planner",
-    "content-validation",
-]
-
 STATE_FILES = [
     "L0-strategy.md",
     "L1-summary.md",
@@ -62,62 +36,32 @@ DOC_FILES = [
 ]
 
 
+def discover_skills() -> dict[str, list[str]]:
+    """Dynamically discover skills from .claude/skills/{domain}/ directories."""
+    skills_dir = ROOT / "skills"
+    domains = ["dev", "content", "pm"]
+    discovered = {d: [] for d in domains}
+    for domain in domains:
+        domain_path = skills_dir / domain
+        if not domain_path.exists():
+            continue
+        for item in domain_path.iterdir():
+            if item.is_dir() and item.name != "_utils":
+                discovered[domain].append(item.name)
+    return discovered
+
+
 def check_skills():
     skills_dir = ROOT / "skills"
-
-    # Check dev skills
-    for name in DEV_SKILLS:
-        skill_md = skills_dir / "dev" / name / "SKILL.md"
-        exit_check = skills_dir / "dev" / name / "exit-check.py"
-        if not skill_md.exists():
-            ISSUES.append(
-                ("dev_skill_missing", f"Dev skill SKILL.md not found: {skill_md}")
-            )
-        if not exit_check.exists():
-            ISSUES.append(
-                (
-                    "dev_exit_check_missing",
-                    f"Dev skill exit-check.py not found: {exit_check}",
-                )
-            )
-
-    # Check content skills
-    for name in CONTENT_SKILLS:
-        skill_md = skills_dir / "content" / name / "SKILL.md"
-        exit_check = skills_dir / "content" / name / "exit-check.py"
-        if not skill_md.exists():
-            ISSUES.append(
-                (
-                    "content_skill_missing",
-                    f"Content skill SKILL.md not found: {skill_md}",
-                )
-            )
-        if not exit_check.exists():
-            ISSUES.append(
-                (
-                    "content_exit_check_missing",
-                    f"Content skill exit-check.py not found: {exit_check}",
-                )
-            )
-
-    # Check pm skills
-    for name in PM_SKILLS:
-        skill_md = skills_dir / "pm" / name / "SKILL.md"
-        exit_check = skills_dir / "pm" / name / "exit-check.py"
-        if not skill_md.exists():
-            ISSUES.append(
-                (
-                    "pm_skill_missing",
-                    f"PM skill SKILL.md not found: {skill_md}",
-                )
-            )
-        if not exit_check.exists():
-            ISSUES.append(
-                (
-                    "pm_exit_check_missing",
-                    f"PM skill exit-check.py not found: {exit_check}",
-                )
-            )
+    discovered = discover_skills()
+    for domain, names in discovered.items():
+        for name in names:
+            skill_md = skills_dir / domain / name / "SKILL.md"
+            exit_check = skills_dir / domain / name / "exit-check.py"
+            if not skill_md.exists():
+                ISSUES.append((f"{domain}_skill_missing", f"{domain} skill SKILL.md not found: {skill_md}"))
+            if not exit_check.exists():
+                ISSUES.append((f"{domain}_exit_check_missing", f"{domain} skill exit-check.py not found: {exit_check}"))
 
 
 def check_hooks():
@@ -194,6 +138,13 @@ def check_skill_frontmatter():
                 (
                     "skill_frontmatter_incomplete",
                     f"{skill_md} frontmatter missing name or description",
+                )
+            )
+        elif "triggers:" not in content:
+            ISSUES.append(
+                (
+                    "skill_frontmatter_missing_triggers",
+                    f"{skill_md} frontmatter missing triggers",
                 )
             )
 
@@ -395,6 +346,24 @@ def check_state_cross_reference():
         )
 
 
+def check_multi_track_consistency():
+    """T16: Verify Business Goal consistency when both dev and content specs exist."""
+    state_dir = ROOT / "state"
+    l2_dev = state_dir / "L2-spec.md"
+    l2_content = state_dir / "L2-content-spec.md"
+    if not l2_dev.exists() or not l2_content.exists():
+        return
+    dev_text = l2_dev.read_text(encoding="utf-8")
+    content_text = l2_content.read_text(encoding="utf-8")
+    def extract_bg(text):
+        m = re.search(r'^##\s+Business Goal\s*\n(.*?)(?=^##\s|\Z)', text, re.MULTILINE | re.DOTALL | re.IGNORECASE)
+        return m.group(1).strip() if m else None
+    dev_bg = extract_bg(dev_text)
+    content_bg = extract_bg(content_text)
+    if dev_bg and content_bg and dev_bg != content_bg:
+        ISSUES.append(("multi_track_goal_conflict", "L2-spec.md and L2-content-spec.md Business Goals differ."))
+
+
 def main() -> int:
     check_skills()
     check_hooks()
@@ -408,6 +377,7 @@ def main() -> int:
     check_print_and_exit()
     check_skill_coverage()
     check_state_cross_reference()
+    check_multi_track_consistency()
 
     if not ISSUES:
         print(

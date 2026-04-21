@@ -5,6 +5,7 @@ intent: >-
   Ensure that what we shipped actually achieved the business goals defined in L2-spec.
   This is G5 in the PM Gate framework — the final validation loop that closes the feedback cycle.
 type: interactive
+triggers: ["validate", "validation", "post-launch", "metrics review", "GO", "PIVOT", "KILL", "验证", "效果验证", "指标复查", "产品验证", "上线后验证", "go/no-go", "7-day", "30-day"]
 best_for:
   - "Product validation after launch (7-day and 30-day checkpoints)"
   - "Deciding whether to continue, pivot, or kill a feature"

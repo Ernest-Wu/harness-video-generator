@@ -5,6 +5,7 @@ intent: >-
   Close the content feedback loop by measuring whether content met the KPIs defined 
   in L0-strategy.md. This is CG5 in the PM Gate framework.
 type: interactive
+triggers: ["content performance", "content KPI", "content review", "ITERATE", "REFRESH", "RETIRE", "内容验证", "内容效果", "CG5", "post-publish review", "内容指标"]
 best_for:
   - "7-day post-publish content performance review"
   - "Deciding whether to iterate, refresh, or retire content"

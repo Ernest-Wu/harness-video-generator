@@ -3,6 +3,7 @@ name: code-review
 description: Two-stage code review checking spec compliance then code quality. Use when a dev-builder Task is complete and before commit.
 intent: Independent reviewer for spec compliance Stage 1 and code quality Stage 2. Stage 1 failures are blocking. Output is gated by exit-check.py to prevent leniency bias.
 type: interactive
+triggers: ["review", "check code", "audit", "quality", "inspect"]
 ---
 
 ## Purpose

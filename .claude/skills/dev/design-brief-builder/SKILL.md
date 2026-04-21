@@ -3,6 +3,7 @@ name: design-brief-builder
 description: Quantify visual direction into a design brief with colors, structure, and interaction style. Use before creating mockups.
 intent: Turn fuzzy visual directions like dark theme or minimal style into concrete, measurable design standards that developers and design tools can align on.
 type: interactive
+triggers: ["design", "style", "theme", "color", "visual", "UI direction"]
 ---
 
 ## Purpose

@@ -8,211 +8,65 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 SKILLS_DIR = Path(__file__).parent / "skills"
 
-SKILL_INDEX = [
-    # dev/ domain (software development)
-    {
-        "name": "dev/product-spec-builder",
-        "triggers": ["idea", "spec", "requirement", "PRD", "scope", "what to build"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/design-brief-builder",
-        "triggers": ["design", "style", "theme", "color", "visual", "UI direction"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/design-maker",
-        "triggers": ["mockup", "figma", "prototype", "design file", "screen"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/dev-planner",
-        "triggers": ["plan", "phase", "roadmap", "tech stack", "architecture"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/dev-builder",
-        "triggers": ["implement", "build", "code", "develop", "feature", "task"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/bug-fixer",
-        "triggers": ["bug", "fix", "error", "crash", "broken", "failing test"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/code-review",
-        "triggers": ["review", "check code", "audit", "quality", "inspect"],
-        "domain": "dev",
-    },
-    {
-        "name": "dev/release-builder",
-        "triggers": ["release", "deploy", "publish", "ship", "build package"],
-        "domain": "dev",
-    },
-    # content/ domain (content production)
-    {
-        "name": "content/script-writer",
-        "triggers": [
-            "口播",
-            "视频",
-            "script",
-            "场景",
-            "scene",
-            "短视频",
-            "文稿",
-            "口播稿",
-            "拆分场景",
-        ],
-        "domain": "content",
-    },
-    {
-        "name": "content/visual-designer",
-        "triggers": [
-            "配图",
-            "风格",
-            "Mood",
-            "HTML预览",
-            "style preview",
-            "幻灯片",
-            "slides",
-            "视觉设计",
-            "出场动画",
-        ],
-        "domain": "content",
-    },
-    {
-        "name": "content/frontend-slides",
-        "triggers": [
-            "HTML slides",
-            "slide design",
-            "slide style",
-            "mood selection",
-            "style preview",
-            "幻灯片设计",
-            "风格预览",
-            "mood",
-            "slide layout",
-        ],
-        "domain": "content",
-    },
-    {
-        "name": "content/tts-engine",
-        "triggers": [
-            "配音",
-            "TTS",
-            "语音",
-            "字幕",
-            "语音合成",
-            "narration",
-            "audio",
-            "朗读",
-        ],
-        "domain": "content",
-    },
-    {
-        "name": "content/video-compositor",
-        "triggers": [
-            "渲染",
-            "合成",
-            "输出视频",
-            "render",
-            "Remotion",
-            "视频输出",
-            "compositing",
-            "MP4",
-        ],
-        "domain": "content",
-    },
-    # pm/ domain (product management decision gates)
-    {
-        "name": "pm/validation",
-        "triggers": [
-            "validate",
-            "validation",
-            "post-launch",
-            "metrics review",
-            "GO",
-            "PIVOT",
-            "KILL",
-            "验证",
-            "效果验证",
-            "指标复查",
-            "产品验证",
-            "上线后验证",
-            "go/no-go",
-            "7-day",
-            "30-day",
-        ],
-        "domain": "pm",
-    },
-    {
-        "name": "pm/content-strategy",
-        "triggers": [
-            "content strategy",
-            "内容策略",
-            "audience targeting",
-            "KPI definition",
-            "CG0",
-            "target audience",
-            "differentiation",
-            "差异化",
-            "目标受众",
-        ],
-        "domain": "pm",
-    },
-    {
-        "name": "pm/distribution-planner",
-        "triggers": [
-            "distribution",
-            "publishing",
-            "UTM",
-            "platform metadata",
-            "分发",
-            "发布计划",
-            "platform strategy",
-            "CG4",
-            "SEO",
-            "分发策略",
-        ],
-        "domain": "pm",
-    },
-    {
-        "name": "pm/content-validation",
-        "triggers": [
-            "content performance",
-            "content KPI",
-            "content review",
-            "ITERATE",
-            "REFRESH",
-            "RETIRE",
-            "内容验证",
-            "内容效果",
-            "CG5",
-            "post-publish review",
-            "内容指标",
-        ],
-        "domain": "pm",
-    },
-]
+
+def parse_skill_triggers(path: Path) -> list[str]:
+    """Extract triggers list from SKILL.md YAML frontmatter using regex."""
+    content = path.read_text(encoding="utf-8")
+    if not content.startswith("---"):
+        return []
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return []
+    frontmatter = parts[1]
+    match = re.search(r'^triggers:\s*\[(.*?)\]', frontmatter, re.MULTILINE | re.DOTALL)
+    if not match:
+        return []
+    items = match.group(1)
+    triggers = []
+    for item in items.split(","):
+        item = item.strip().strip('"').strip("'")
+        if item:
+            triggers.append(item)
+    return triggers
 
 
-def route(query: str, domain: Optional[str] = None) -> List[str]:
+def build_skill_index() -> list[dict]:
+    """Dynamically build skill index from filesystem."""
+    index = []
+    domains = ["dev", "content", "pm"]
+    for domain in domains:
+        domain_path = SKILLS_DIR / domain
+        if not domain_path.exists():
+            continue
+        for item in domain_path.iterdir():
+            if item.is_dir() and item.name != "_utils":
+                skill_md = item / "SKILL.md"
+                triggers = parse_skill_triggers(skill_md) if skill_md.exists() else []
+                index.append({
+                    "name": f"{domain}/{item.name}",
+                    "triggers": triggers,
+                    "domain": domain,
+                })
+    return index
+
+
+def route(query: str, domain: Optional[str] = None) -> list[str]:
     """Route a user query to the best Skill(s).
 
     Args:
         query: User intent description
         domain: Optional domain filter ('dev', 'content', or 'pm')
     """
+    index = build_skill_index()
     query_lower = query.lower()
     # Tokenize query for exact-word matching bonus
     query_tokens = set(re.findall(r"[a-z0-9\u4e00-\u9fff]+", query_lower))
     scores = []
-    for skill in SKILL_INDEX:
+    for skill in index:
         if domain and skill["domain"] != domain:
             continue
         score = 0

@@ -5,6 +5,7 @@ intent: >-
   Ensure every piece of content starts with clear strategic intent: who it's for, 
   why we're making it, and how we measure success. This is CG0 in the PM Gate framework.
 type: interactive
+triggers: ["content strategy", "内容策略", "audience targeting", "KPI definition", "CG0", "target audience", "differentiation", "差异化", "目标受众"]
 best_for:
   - "Starting a new content production cycle"
   - "Defining audience, goals, and KPIs before creating content"

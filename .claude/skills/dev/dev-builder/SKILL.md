@@ -4,6 +4,7 @@ description: Implement one Task at a time with compile validation and regression
 intent: >-
   Break a Phase into discrete Tasks and implement them one by one. Each Task must compile and pass basic validation before proceeding. Prevents "big bang" commits where a single change introduces multiple intertwined bugs.
 type: workflow
+triggers: ["implement", "build", "code", "develop", "feature", "task"]
 best_for:
   - "Implementing a specific task from a DEV-PLAN"
   - "Adding a feature or fixing a bug with minimal blast radius"

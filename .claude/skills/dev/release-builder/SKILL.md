@@ -3,6 +3,7 @@ name: release-builder
 description: Package, verify, and publish the product. Use when all Phases are complete and reviewed.
 intent: Perform the final build, verification, and deployment steps to ship the product. Acts as the last physical gate before users see the product.
 type: workflow
+triggers: ["release", "deploy", "publish", "ship", "build package"]
 best_for:
   - Final shipping preparation
   - Production deployment verification

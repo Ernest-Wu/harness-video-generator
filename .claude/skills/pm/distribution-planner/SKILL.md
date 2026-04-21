@@ -5,6 +5,7 @@ intent: >-
   Ensure every piece of content has a distribution plan: which platform, when, 
   with what metadata, and how to track performance. This is CG4 in the PM Gate framework.
 type: interactive
+triggers: ["distribution", "publishing", "UTM", "platform metadata", "分发", "发布计划", "platform strategy", "CG4", "SEO", "分发策略"]
 best_for:
   - "Planning content distribution before publishing"
   - "Setting up UTM tracking and SEO metadata"

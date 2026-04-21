@@ -3,6 +3,7 @@ name: dev-planner
 description: Research tech stack and split the project into Phases with clear deliverables. Use after spec and design are ready.
 intent: Create a structured DEV-PLAN that breaks a project into executable Phases. This file serves as the anchor for cross-session development continuity.
 type: interactive
+triggers: ["plan", "phase", "roadmap", "tech stack", "architecture"]
 ---
 
 ## Purpose
