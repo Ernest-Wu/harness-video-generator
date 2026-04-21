@@ -14,7 +14,11 @@ SKILLS_DIR = Path(__file__).parent / "skills"
 
 
 def parse_skill_triggers(path: Path) -> list[str]:
-    """Extract triggers list from SKILL.md YAML frontmatter using regex."""
+    """Extract triggers list from SKILL.md YAML frontmatter.
+
+    Uses line-by-line scanning with rfind(']') to correctly handle
+    trigger strings that contain ']' characters (e.g. ["button]", "click"]).
+    """
     content = path.read_text(encoding="utf-8")
     if not content.startswith("---"):
         return []
@@ -22,16 +26,20 @@ def parse_skill_triggers(path: Path) -> list[str]:
     if len(parts) < 3:
         return []
     frontmatter = parts[1]
-    match = re.search(r'^triggers:\s*\[(.*?)\]', frontmatter, re.MULTILINE | re.DOTALL)
-    if not match:
-        return []
-    items = match.group(1)
-    triggers = []
-    for item in items.split(","):
-        item = item.strip().strip('"').strip("'")
-        if item:
-            triggers.append(item)
-    return triggers
+    for line in frontmatter.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("triggers:"):
+            start = stripped.find("[")
+            end = stripped.rfind("]")
+            if start != -1 and end != -1 and end > start:
+                items = stripped[start + 1:end]
+                triggers = []
+                for item in items.split(","):
+                    item = item.strip().strip('"').strip("'")
+                    if item:
+                        triggers.append(item)
+                return triggers
+    return []
 
 
 def build_skill_index() -> list[dict]:
